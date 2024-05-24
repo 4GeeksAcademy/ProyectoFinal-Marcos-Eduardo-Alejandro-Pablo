@@ -4,6 +4,7 @@ import rigoImageUrl from "../../img/rigo-baby.jpg";
 import "../../styles/home.css";
 import { SearchBar } from "../component/SearchBar";
 import { Card } from "../component/Card";
+import { CardDetallePelicula } from "../component/CardDetallePelicula";
 
 
 

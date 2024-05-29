@@ -27,7 +27,7 @@ const SingleShow = () => {
                 </div>
                 <div className="col-md-6">
                     <h1>{showData.name}</h1>
-                    <p dangerouslySetInnerHTML={{ __html: showData.summary }}></p> {/* Render HTML safely */}
+                    <p dangerouslySetInnerHTML={{ __html: showData.summary }}></p>
                     <p>Type: {showData.type}</p>
                     <p>Language: {showData.language}</p>
                     <p>Genres: {showData.genres?.join(', ')}</p>

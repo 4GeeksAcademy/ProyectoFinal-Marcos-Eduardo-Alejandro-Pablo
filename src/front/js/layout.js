@@ -8,6 +8,10 @@ import { Demo } from "./pages/demo";
 import { Single } from "./pages/single";
 import SingleShow from "./pages/SingleShow.jsx";
 
+import PerfilUsuario from "./pages/PerfilUsuario.jsx";
+import PaginaLogin from "./pages/PaginaLogin.jsx";
+import PaginaRegistro from "./pages/PaginaRegistro.jsx";
+
 import injectContext from "./store/appContext";
 
 import { Header } from "./component/Header";
@@ -35,6 +39,9 @@ const Layout = () => {
                                 <Route element={<Demo />} path="/demo" />
                                 <Route element={<Single />} path="/single/:theid" />
                                 <Route element={<SingleShow />} path="/show/:id" />
+                                <Route element={<PerfilUsuario />} path="/perfil/" />
+                                <Route element={<PaginaLogin />} path="/login/" />
+                                <Route element={<PaginaRegistro />} path="/registro/" />
                                 <Route element={<h1>Not found!</h1>} />
                             </Routes>
                         </BrowserRouter>

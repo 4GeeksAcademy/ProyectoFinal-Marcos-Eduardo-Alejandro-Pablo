@@ -27,13 +27,13 @@ const Layout = () => {
 
     return (
         <>
-            <Header />
+            <BrowserRouter basename={basename}>
+                <Header />
 
 
-            <div class="container" id="webbody">
-                <div class="row">
-                    <div class="col">
-                        <BrowserRouter basename={basename}>
+                <div className="container" id="webbody">
+                    <div className="row">
+                        <div className="col">
                             <Routes>
                                 <Route element={<Home />} path="/" />
                                 <Route element={<Demo />} path="/demo" />
@@ -44,11 +44,11 @@ const Layout = () => {
                                 <Route element={<PaginaRegistro />} path="/registro/" />
                                 <Route element={<h1>Not found!</h1>} />
                             </Routes>
-                        </BrowserRouter>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <Footer />
+                <Footer />
+            </BrowserRouter>
         </>
 
     );

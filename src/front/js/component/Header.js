@@ -21,11 +21,11 @@ export const Header = () => {
 							<a className="nav-link" href="#">Mis Favoritos</a>
 						</li>
 						<li className="nav-item">
-							<a className="nav-link" href="#">Mi Perfil</a>
+							<Link to="/perfil" className="nav-link">Mi Perfil</Link>
 						</li>
 					</ul>
 					<li className="nav-item" style={{ listStyle: "none" }}>
-						<a className="nav-link" href="#">Pablo Curto</a>
+						<Link to="/login/" className="nav-link" href="#">Login</Link>
 					</li>
 				</div>
 			</div>

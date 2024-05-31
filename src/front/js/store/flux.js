@@ -106,7 +106,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 
 			logout: () => {
-				localStorage.clear();
+				localStorage.removeItem('jwt-token');
 			}
 
 		}

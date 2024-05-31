@@ -30,3 +30,15 @@ class Favorito(db.Model):
             "user_id": self.user_id,
             "show_id": self.show_id,
         }
+    
+class Blacklist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    show_id = db.Column(db.Integer, nullable=False)  
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "show_id": self.show_id,
+        }

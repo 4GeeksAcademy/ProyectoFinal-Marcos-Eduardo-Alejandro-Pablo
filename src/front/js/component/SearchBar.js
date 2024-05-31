@@ -39,9 +39,9 @@ export const SearchBar = () => {
         </button>
       </div>
       <div>
-        <div class="container">
-          <div class="row">
-            <div class="col d-flex gap-5 flex-wrap">
+        <div className="container">
+          <div className="row">
+            <div className="col d-flex gap-5 flex-wrap">
               {searchResults.length > 0 && searchResults.map((card, index) => (
                 <Card key={index} cardInfo={card} />
               ))}

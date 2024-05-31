@@ -47,7 +47,68 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 				//reset the global store
 				setStore({ demo: demo });
+			},
+			registro: async ({ email, password }) => {
+				try {
+					const response = await fetch('http://127.0.0.1:3001/api/users', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'accept': 'application/json'
+						},
+						body: JSON.stringify({ 'email': email, 'password': password }) // Enviar contraseña en texto plano
+					});
+
+					if (!response.ok) {
+						console.error('Error al enviar datos');
+						throw new Error('Error al enviar datos');
+					}
+
+					const data = await response.json();
+					console.log('Datos guardados correctamente:', data);
+					setStore({ datos: data.result });
+				} catch (error) {
+					console.error('Error:', error);
+				}
+			},
+
+			login: async ({ email, password }) => {
+				try {
+					const response = await fetch('https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'accept': 'application/json'
+						},
+						body: JSON.stringify({ 'email': email, 'password': password }) // Enviar contraseña en texto plano
+					});
+
+					if (!response.ok) {
+						console.error('Error al enviar datos');
+						throw new Error('Error al enviar datos');
+					}
+
+					const data = await response.json();
+					console.log('Datos guardados correctamente:', data);
+					localStorage.setItem("jwt-token", data.token);
+					console.log(localStorage.getItem("jwt-token"));
+
+					return true;
+				} catch (error) {
+					console.error('Error:', error);
+					return false;
+				}
+			},
+
+			getToken: () => {
+				const token = localStorage.getItem('jwt-token');
+				return !!token;
+			},
+
+			logout: () => {
+				localStorage.clear();
 			}
+
 		}
 	};
 };

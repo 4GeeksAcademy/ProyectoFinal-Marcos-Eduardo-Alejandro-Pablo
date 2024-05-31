@@ -1,12 +1,26 @@
-import React from 'react';
+import React, {useContext} from 'react';
+import { Context } from '../store/appContext';
 
 const PerfilUsuario = () => {
+    const { store, actions } = useContext(Context);
 
+    const handleLogout = () => {
+        actions.logout();
+    };
+
+    if (!actions.getToken()) {
+        return (
+            <div className="container text-center mt-5">
+                <h1 className="text-danger">No estás autorizado</h1>
+            </div>
+        );
+    }
 
     return (
         <div className="container mt-5">
             <div className="row">
                 <div className="col-md-8">
+                    <p onClick={handleLogout}>Logout</p>
                 <h2>Eduardo</h2>
                     <p><strong>Email: </strong>edu@educom.com</p>
                 </div>

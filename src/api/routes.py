@@ -65,7 +65,7 @@ def get_blacklist():
     return jsonify([blacklist.serialize() for blacklist in blacklist]), 200
 
 @api.route('/blacklist/<int:blacklist_id>', methods=['GET'])
-def get_blacklist(blacklist_id):
+def get_blacklist2(blacklist_id):
     blacklist = Blacklist.query.get(blacklist_id)
     if not blacklist:
         raise APIException('Black list not found', status_code=404)
@@ -119,6 +119,12 @@ def add_user():
     db.session.commit()
 
     return jsonify(new_user.serialize())
+
+@api.route('/users', methods=['GET'])
+def handle_users():
+    users = User.query.all()
+    all_users = list(map(lambda x: x.serialize(), users))
+    return jsonify(all_users), 200
 
 @api.route('/login', methods=['POST'])
 def create_token():

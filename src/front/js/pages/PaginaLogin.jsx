@@ -18,14 +18,14 @@ const PaginaLogin = () => {
         }
     };
     return (
-        <form onSubmit={handleSubmit}>
+      
         <div className="container mt-5">
             <div className="row justify-content-center">
                 <div className="col-md-6">
                     <div className="card" style={{backgroundColor: "#151515"}}>
                         <div className="card-body">
                             <h3 className="card-title text-center">Iniciar sesión</h3>
-                            <form>
+                            <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
                                     <label htmlFor="email" className="form-label">Correo electrónico</label>
                                     <input type="email" className="form-control" id="email"
@@ -54,7 +54,7 @@ const PaginaLogin = () => {
                 </div>
             </div>
         </div>
-        </form>
+      
     );
 };
 

@@ -31,9 +31,9 @@ const Layout = () => {
                 <Header />
 
 
-                <div class="container" id="webbody">
-                    <div class="row">
-                        <div class="col">
+                <div className="container" id="webbody">
+                    <div className="row">
+                        <div className="col">
                             <Routes>
                                 <Route element={<Home />} path="/" />
                                 <Route element={<Demo />} path="/demo" />

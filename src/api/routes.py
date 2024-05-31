@@ -60,7 +60,7 @@ def delete_favorito(favorito_id):
 # Parte de la Lista negra
 
 @api.route('/blacklist', methods=['GET'])
-def get_favoritos():
+def get_blacklists():
     blacklist = Favorito.query.all()
     return jsonify([blacklist.serialize() for blacklist in blacklist]), 200
 

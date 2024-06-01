@@ -10,12 +10,13 @@ const PaginaLogin = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const success = await actions.login(userInput);
+        console.log(success);
         console.log(userInput);
-        if (success) {
-            window.location.href = '/perfil/';
-        } else {
-            setErrorMessage("Error al iniciar sesión: correo electrónico o contraseña incorrectos.");
-        }
+        // if (success) {
+        //     window.location.href = '/perfil/';
+        // } else {
+        //     setErrorMessage("Error al iniciar sesión: correo electrónico o contraseña incorrectos.");
+        // }
     };
     return (
       

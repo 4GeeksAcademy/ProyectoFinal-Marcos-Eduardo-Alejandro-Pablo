@@ -7,7 +7,9 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
-CORS(api)
+
+CORS(api, origins="*")
+
 
 @api.route('/favoritos', methods=['GET'])
 def get_favoritos():
@@ -126,7 +128,7 @@ def handle_users():
     all_users = list(map(lambda x: x.serialize(), users))
     return jsonify(all_users), 200
 
-@api.route('/login', methods=['POST'])
+@api.route('/login', methods=['POST', 'OPTIONS'])
 def create_token():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
@@ -154,3 +156,4 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return '', 204
+    

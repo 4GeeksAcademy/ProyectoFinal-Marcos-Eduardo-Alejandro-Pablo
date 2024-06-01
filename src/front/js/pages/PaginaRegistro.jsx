@@ -8,9 +8,11 @@ const PaginaRegistro = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        actions.registro(userInput);
-        console.log(userInput);
-        window.location.href = "/perfil/";
+        actions.registro(userInput)
+            .then(() => {
+                console.log(userInput);
+                window.location.href = "/perfil/";
+            });
     };
 
 

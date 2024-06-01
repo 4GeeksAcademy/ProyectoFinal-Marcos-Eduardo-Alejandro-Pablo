@@ -55,7 +55,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 			registro: async ({ email, password }) => {
 				try {
-					const response = await fetch('https://obscure-space-guide-4jj5q4vvvg6xcj56v-3001.app.github.dev/api/users', {
+					const response = await fetch('https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/api/users', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
@@ -72,18 +72,21 @@ const getState = ({ getStore, getActions, setStore }) => {
 					const data = await response.json();
 					console.log('Datos guardados correctamente:', data);
 					setStore({ datos: data.result });
+
+					return data; // Return the data so you can use .then() in your handleSubmit function
 				} catch (error) {
 					console.error('Error:', error);
+					throw error; // Throw the error so you can catch it in your handleSubmit function
 				}
 			},
 
 			login: async ({ email, password }) => {
 				try {
-					const response = await fetch('https://obscure-space-guide-4jj5q4vvvg6xcj56v.github.dev/api/login', {
+					const response = await fetch('https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/api/login', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
-							'accept': 'application/json'
+							'accept': 'application/json',
 						},
 						body: JSON.stringify({ 'email': email, 'password': password }) // Enviar contraseña en texto plano
 					});

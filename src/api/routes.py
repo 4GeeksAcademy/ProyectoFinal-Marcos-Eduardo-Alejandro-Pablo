@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Blueprint
+from flask import Flask, request, jsonify, Blueprint, Response
 from api.models import db, Favorito,  User
 from api.utils import APIException
 from flask_cors import CORS
@@ -127,6 +127,14 @@ def handle_users():
     users = User.query.all()
     all_users = list(map(lambda x: x.serialize(), users))
     return jsonify(all_users), 200
+
+@api.route('/login', methods=['OPTIONS'])
+def options():
+    response = Response()
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'POST')
+    return response
 
 @api.route('/login', methods=['POST', 'OPTIONS'])
 def create_token():

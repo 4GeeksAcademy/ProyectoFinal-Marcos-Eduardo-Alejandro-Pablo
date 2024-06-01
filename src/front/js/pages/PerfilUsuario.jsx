@@ -1,11 +1,20 @@
-import React, {useContext} from 'react';
+import React, {useContext, useEffect} from 'react';
 import { Context } from '../store/appContext';
+import { useNavigate } from 'react-router-dom';
 
 const PerfilUsuario = () => {
     const { store, actions } = useContext(Context);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        actions.getCurrentUser();
+
+    }, [actions]);
 
     const handleLogout = () => {
         actions.logout();
+        navigate('/');
+
     };
 
     if (!actions.getToken()) {
@@ -15,23 +24,23 @@ const PerfilUsuario = () => {
             </div>
         );
     }
+    console.log(store.currentUser);
 
     return (
         <div className="container mt-5">
             <div className="row">
                 <div className="col-md-8">
                     <p onClick={handleLogout}>Logout</p>
-                <h2>Eduardo</h2>
-                    <p><strong>Email: </strong>edu@educom.com</p>
+                    <h2>{store.currentUser.email}</h2>
+                    <p><strong>ID: {store.currentUser.id}</strong></p>
                 </div>
                 <div className="col-md-4 text-left">
-                <img src="https://via.placeholder.com/150" alt="Profile" className="img-fluid rounded-circle mb-3" />
+                    <img src="https://via.placeholder.com/150" alt="Profile" className="img-fluid rounded-circle mb-3" />
                 </div>
             </div>
             <div className="row">
-            <h3>Favoritos:</h3>
+                <h3>Favoritos:</h3>
             </div>
-            
         </div>
     );
 };

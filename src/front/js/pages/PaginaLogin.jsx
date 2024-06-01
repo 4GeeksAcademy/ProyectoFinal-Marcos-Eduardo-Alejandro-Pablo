@@ -1,9 +1,13 @@
 import React, { useState, useContext } from "react";
 import { Context } from '../store/appContext';
 import { Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+
 
 const PaginaLogin = () => {
     const { store, actions } = useContext(Context);
+    const navigate = useNavigate();
+
     const [userInput, setUserInput] = useState({});
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -13,7 +17,7 @@ const PaginaLogin = () => {
         console.log(success);
         console.log(userInput);
         if (success) {
-            window.location.href = '/perfil/';
+            navigate('/perfil/');
         } else {
             setErrorMessage("Error al iniciar sesión: correo electrónico o contraseña incorrectos.");
         }

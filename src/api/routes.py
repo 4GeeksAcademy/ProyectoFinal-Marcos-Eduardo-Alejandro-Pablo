@@ -164,4 +164,10 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return '', 204
-    
+
+@api.route('/users/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+    return jsonify(user.serialize()), 200

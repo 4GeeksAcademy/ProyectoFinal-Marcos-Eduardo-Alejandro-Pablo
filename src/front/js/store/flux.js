@@ -3,6 +3,7 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
+			currentUser: null,
 			message: null,
 			datos: [],
 			demo: [
@@ -100,7 +101,11 @@ const getState = ({ getStore, getActions, setStore }) => {
 					console.log('Datos guardados correctamente:', data);
 					localStorage.setItem("jwt-token", data.token);
 					console.log(localStorage.getItem("jwt-token"));
+					// Store the user data in the store
+					setStore({ currentUser: data });
+					console.log(data);
 
+					console.log(getStore().currentUser);
 					return true;
 				} catch (error) {
 					console.error('Error:', error);
@@ -114,8 +119,39 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 
 			logout: () => {
-				localStorage.clear();
-			}
+				localStorage.removeItem('jwt-token');
+				setStore({ currentUser: null });
+			},
+			getCurrentUser: async () => {
+				const userId = getStore().currentUser.user_id;
+				// const store = getStore();
+				try {
+					const response = await fetch(`https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/api/users/${userId}`, {
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							'accept': 'application/json',
+							'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
+						}
+					});
+
+					if (!response.ok) {
+						console.error('Error retrieving user data');
+						throw new Error('Error retrieving user data');
+					}
+
+					const data = await response.json();
+					console.log('User data retrieved successfully:', data); // Log the user data
+					setStore({ currentUser: data });
+
+					console.log(getStore().currentUser); // Log the updated store
+
+					return data; // Return the data so you can use .then() in your function
+				} catch (error) {
+					console.error('Error:', error);
+					throw error; // Throw the error so you can catch it in your function
+				}
+			},
 		}
 	};
 };

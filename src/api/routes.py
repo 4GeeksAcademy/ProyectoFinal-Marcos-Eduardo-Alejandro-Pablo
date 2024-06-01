@@ -39,7 +39,7 @@ def update_favorito(favorito_id):
         raise APIException('Favorito not found', status_code=404)
 
     data = request.get_json()
-    if 'user_id' in data:
+    if 'user_id' in data and data['user_id'] is not None:
         favorito.user_id = data['user_id']
     if 'show_id' in data:
         favorito.show_id = data['show_id']
@@ -144,3 +144,13 @@ def protected():
     current_user_id = get_jwt_identity()
     user = User.filter.get(current_user_id)
     return jsonify({"id": user.id, "email": user.email}), 200
+
+@api.route('/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+
+    db.session.delete(user)
+    db.session.commit()
+    return '', 204

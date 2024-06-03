@@ -129,7 +129,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 				const userId = getStore().currentUser.user_id;
 				// const store = getStore();
 				try {
-					const response = await fetch(process.env.BACKEND_URL + '/api/users/${userId}', {
+					const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId, {
 						method: 'GET',
 						headers: {
 							'Content-Type': 'application/json',

@@ -131,35 +131,34 @@ const getState = ({ getStore, getActions, setStore }) => {
 				const userId = getStore().currentUser.user_id;
 				// const store = getStore();
 				try {
-					const response = await fetch(process.env.BACKEND_URL + `/api/users/${userId}`, {
-					
+					const response = await fetch(process.env.BACKEND_URL + '/api/users/${userId}', {
 						method: 'GET',
 						headers: {
-						'Content-Type': 'application/json',
-						'accept': 'application/json',
-						'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
-					}
+							'Content-Type': 'application/json',
+							'accept': 'application/json',
+							'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
+						}
 					});
 
-				if (!response.ok) {
-					console.error('Error retrieving user data');
-					throw new Error('Error retrieving user data');
+					if (!response.ok) {
+						console.error('Error retrieving user data');
+						throw new Error('Error retrieving user data');
+					}
+
+					const data = await response.json();
+					console.log('User data retrieved successfully:', data); // Log the user data
+					setStore({ currentUser: data });
+
+					console.log(getStore().currentUser); // Log the updated store
+
+					return data; // Return the data so you can use .then() in your function
+				} catch (error) {
+					console.error('Error:', error);
+					throw error; // Throw the error so you can catch it in your function
 				}
-
-				const data = await response.json();
-				console.log('User data retrieved successfully:', data); // Log the user data
-				setStore({ currentUser: data });
-
-				console.log(getStore().currentUser); // Log the updated store
-
-				return data; // Return the data so you can use .then() in your function
-			} catch(error) {
-				console.error('Error:', error);
-				throw error; // Throw the error so you can catch it in your function
-			}
-		},
-	}
-};
+			},
+		}
+	};
 };
 
 export default getState;

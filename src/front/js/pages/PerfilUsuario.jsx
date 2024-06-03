@@ -31,8 +31,8 @@ const PerfilUsuario = () => {
             <div className="row">
                 <div className="col-md-8">
                     <p onClick={handleLogout}>Logout</p>
-                    <h2>{store.currentUser.email}</h2>
-                    <p><strong>ID: {store.currentUser.id}</strong></p>
+                    <h2>{store.currentUser && store.currentUser.email}</h2>
+                    <p><strong>ID: {store.currentUser && store.currentUser.email}</strong></p>
                 </div>
                 <div className="col-md-4 text-left">
                     <img src="https://via.placeholder.com/150" alt="Profile" className="img-fluid rounded-circle mb-3" />

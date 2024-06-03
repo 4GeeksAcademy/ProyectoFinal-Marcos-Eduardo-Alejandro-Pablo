@@ -1,10 +1,12 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { Context } from "../store/appContext";
 
 const SingleShow = () => {
    
     const [showData, setShowData] = useState([]);
     const { id } = useParams(); 
+    const { store, actions } = useContext(Context);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -38,6 +40,7 @@ const SingleShow = () => {
                     <p>Rating: {showData.rating?.average}</p>
                     <p>Network: {showData.network?.name}</p>
                     <a href="€" className="btn btn-primary">Añadir a fav</a>
+                    <button onClick={()=>{actions.setFavoritas(peliculasFavoritas)}} className="btn btn-outline-danger" ><i className="fas fa-heart"></i></button>
                 </div>
             </div>
         </div>

@@ -1,5 +1,3 @@
-
-
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
@@ -17,7 +15,11 @@ const getState = ({ getStore, getActions, setStore }) => {
 					background: "white",
 					initial: "white"
 				}
-			]
+			],
+			peliculasFavoritas: [],
+			peliculasPendientes: [],
+			peliculasVistas: [],
+			listaNegra: [],
 		},
 		actions: {
 			exampleFunction: () => {
@@ -151,6 +153,57 @@ const getState = ({ getStore, getActions, setStore }) => {
 					console.error('Error:', error);
 					throw error; // Throw the error so you can catch it in your function
 				}
+			},
+			setFavoritas: (item) => {
+				const store = getStore()
+				if (!store.peliculasFavoritas.some(fav => fav.id === item.id)) {
+					setStore({ peliculasFavoritas: [...store.peliculasFavoritas, item] });
+				}
+			},
+			removeFromFavoritas: (index) => {
+				const store = getStore();
+				const updatedFavoritos = [...store.peliculasFavoritas];
+				updatedFavoritos.splice(index, 1);
+				setStore({ ...store, peliculasFavoritas: updatedFavoritos });
+			},
+
+			setPendientes: (item) => {
+				const store = getStore()
+				if (!store.peliculasPendientes.includes(item)) {
+					setStore({ peliculasPendientes: [...store.peliculasPendientes, item] })
+				}
+			},
+			removeFromPendientes: (index) => {
+				const store = getStore();
+				const updatedPendientes = [...store.peliculasPendientes];
+				updatedPendientes.splice(index, 1);
+				setStore({ ...store, peliculasPendientes: updatedPendientes });
+			},
+
+			setVistas: (item) => {
+				const store = getStore()
+				if (!store.peliculasVistas.includes(item)) {
+					setStore({ peliculasVistas: [...store.peliculasVistas, item] })
+				}
+			},
+			removeFromVistas: (index) => {
+				const store = getStore();
+				const updatedVistas = [...store.peliculasVistas];
+				updatedVistas.splice(index, 1);
+				setStore({ ...store, peliculasVistas: updatedVistas });
+			},
+
+			setNegra: (item) => {
+				const store = getStore()
+				if (!store.listaNegra.includes(item)) {
+					setStore({ listaNegra: [...store.listaNegra, item] })
+				}
+			},
+			removeFromNegra: (index) => {
+				const store = getStore();
+				const updatedNegra = [...store.listaNegra];
+				updatedNegra.splice(index, 1);
+				setStore({ ...store, listaNegra: updatedNegra });
 			},
 		}
 	};

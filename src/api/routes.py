@@ -59,6 +59,14 @@ def delete_favorito(favorito_id):
     db.session.commit()
     return '', 204
 
+@api.route('/users/<int:user_id>/favoritos', methods=['GET'])
+def get_user_favoritos(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+    favoritos = Favorito.query.filter_by(user_id=user_id).all()
+    return jsonify([favorito.serialize() for favorito in favoritos]), 200
+
 # Parte de la Lista negra
 
 # @api.route('/blacklist', methods=['GET'])

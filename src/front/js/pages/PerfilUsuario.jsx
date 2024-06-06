@@ -1,9 +1,11 @@
-import React, {useContext, useEffect} from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Context } from '../store/appContext';
 import { useNavigate } from 'react-router-dom';
 
 const PerfilUsuario = () => {
     const { store, actions } = useContext(Context);
+    console.log(store.currentUser);
+    const [token, setToken] = useState(actions.getToken());
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -17,14 +19,18 @@ const PerfilUsuario = () => {
 
     };
 
-    if (!actions.getToken()) {
+    useEffect(() => {
+        setToken(actions.getToken());
+    }, []);
+
+    if (!token) {
         return (
             <div className="container text-center mt-5">
                 <h1 className="text-danger">No estás autorizado</h1>
             </div>
         );
     }
-    console.log(store.currentUser);
+    console.log(store.currentUser.id);
 
     return (
         <div className="container mt-5">

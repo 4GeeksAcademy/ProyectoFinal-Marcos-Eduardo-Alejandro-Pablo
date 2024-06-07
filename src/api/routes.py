@@ -1,13 +1,15 @@
-from flask import Flask, request, jsonify, Blueprint
-from api.models import db, Favorito, Blacklist, User
+from flask import Flask, request, jsonify, Blueprint, Response
+from api.models import db, Favorito,  User
 from api.utils import APIException
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
-CORS(api)
+
+CORS(api, origins="*")
+
 
 @api.route('/favoritos', methods=['GET'])
 def get_favoritos():
@@ -39,7 +41,7 @@ def update_favorito(favorito_id):
         raise APIException('Favorito not found', status_code=404)
 
     data = request.get_json()
-    if 'user_id' in data:
+    if 'user_id' in data and data['user_id'] is not None:
         favorito.user_id = data['user_id']
     if 'show_id' in data:
         favorito.show_id = data['show_id']
@@ -57,57 +59,66 @@ def delete_favorito(favorito_id):
     db.session.commit()
     return '', 204
 
+@api.route('/users/<int:user_id>/favoritos', methods=['GET'])
+def get_user_favoritos(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+    favoritos = Favorito.query.filter_by(user_id=user_id).all()
+    return jsonify([favorito.serialize() for favorito in favoritos]), 200
+
 # Parte de la Lista negra
 
-@api.route('/blacklist', methods=['GET'])
-def get_blacklists():
-    blacklist = Favorito.query.all()
-    return jsonify([blacklist.serialize() for blacklist in blacklist]), 200
+# @api.route('/blacklist', methods=['GET'])
+# def get_blacklist():
+#     blacklist = Blacklist.query.all()
+#     return jsonify([blacklist.serialize() for blacklist in blacklist]), 200
 
-@api.route('/blacklist/<int:blacklist_id>', methods=['GET'])
-def get_blacklist(blacklist_id):
-    blacklist = Blacklist.query.get(blacklist_id)
-    if not blacklist:
-        raise APIException('Black list not found', status_code=404)
-    return jsonify(blacklist.serialize()), 200
+# @api.route('/blacklist/<int:blacklist_id>', methods=['GET'])
+# def get_blacklist2(blacklist_id):
+#     blacklist = Blacklist.query.get(blacklist_id)
+#     if not blacklist:
+#         raise APIException('Black list not found', status_code=404)
+#     return jsonify(blacklist.serialize()), 200
 
-@api.route('/blacklist', methods=['POST'])
-def create_blacklist():
-    data = request.get_json()
-    if not data or not data.get('user_id') or not data.get('show_id'):
-        raise APIException('User ID and Show ID are required', status_code=400)
+# @api.route('/blacklist', methods=['POST'])
+# def create_blacklist():
+#     data = request.get_json()
+#     if not data or not data.get('user_id') or not data.get('show_id'):
+#         raise APIException('User ID and Show ID are required', status_code=400)
     
-    new_blacklist = Blacklist(user_id=data['user_id'], show_id=data['show_id'])
-    db.session.add(new_blacklist)
-    db.session.commit()
-    return jsonify(new_blacklist.serialize()), 201
+#     new_blacklist = Blacklist(user_id=data['user_id'], show_id=data['show_id'])
+#     db.session.add(new_blacklist)
+#     db.session.commit()
+#     return jsonify(new_blacklist.serialize()), 201
 
-@api.route('/blacklist/<int:blacklist_id>', methods=['PUT'])
-def update_blacklist(blacklist_id):
-    blacklist = Blacklist.query.get(blacklist_id)
-    if not blacklist:
-        raise APIException('Black list not found', status_code=404)
+# @api.route('/blacklist/<int:blacklist_id>', methods=['PUT'])
+# def update_blacklist(blacklist_id):
+#     blacklist = Blacklist.query.get(blacklist_id)
+#     if not blacklist:
+#         raise APIException('Black list not found', status_code=404)
 
-    data = request.get_json()
-    if 'user_id' in data:
-        blacklist.user_id = data['user_id']
-    if 'show_id' in data:
-        blacklist.show_id = data['show_id']
+#     data = request.get_json()
+#     if 'user_id' in data:
+#         blacklist.user_id = data['user_id']
+#     if 'show_id' in data:
+#         blacklist.show_id = data['show_id']
     
-    db.session.commit()
-    return jsonify(blacklist.serialize()), 200
+#     db.session.commit()
+#     return jsonify(blacklist.serialize()), 200
 
-@api.route('/blacklist/<int:blacklist_id>', methods=['DELETE'])
-def delete_blacklist(blacklist_id):
-    blacklist = Blacklist.query.get(blacklist_id)
-    if not blacklist:
-        raise APIException('Black list not found', status_code=404)
+# @api.route('/blacklist/<int:blacklist_id>', methods=['DELETE'])
+# def delete_blacklist(blacklist_id):
+#     blacklist = Blacklist.query.get(blacklist_id)
+#     if not blacklist:
+#         raise APIException('Black list not found', status_code=404)
 
-    db.session.delete(blacklist)
-    db.session.commit()
-    return '', 204
+#     db.session.delete(blacklist)
+#     db.session.commit()
+#     return '', 204
 
 @api.route('/users', methods=['POST'])
+@cross_origin(origin='*')
 def add_user():
     request_data = request.get_json()
     if not request_data or 'email' not in request_data or 'password' not in request_data:
@@ -120,7 +131,24 @@ def add_user():
 
     return jsonify(new_user.serialize())
 
-@api.route('/login', methods=['POST'])
+@api.route('/users', methods=['GET'])
+@cross_origin(origin='*')
+def handle_users():
+    users = User.query.all()
+    all_users = list(map(lambda x: x.serialize(), users))
+    return jsonify(all_users), 200
+
+@api.route('/login', methods=['OPTIONS'])
+@cross_origin(origin='*')
+def options():
+    response = Response()
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'POST')
+    return response
+
+@api.route('/login', methods=['POST', 'OPTIONS'])
+@cross_origin(origin='*')
 def create_token():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
@@ -133,8 +161,28 @@ def create_token():
     return jsonify({"token": access_token, "user_id": user.id})
 
 @api.route('/protected', methods=['GET'])
+@cross_origin(origin='*')
 @jwt_required()
 def protected():
     current_user_id = get_jwt_identity()
     user = User.filter.get(current_user_id)
     return jsonify({"id": user.id, "email": user.email}), 200
+
+@api.route('/users/<int:user_id>', methods=['DELETE'])
+@cross_origin(origin='*')
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+
+    db.session.delete(user)
+    db.session.commit()
+    return '', 204
+
+@api.route('/users/<int:user_id>', methods=['GET'])
+@cross_origin(origin='*')
+def get_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+    return jsonify(user.serialize()), 200

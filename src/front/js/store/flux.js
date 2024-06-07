@@ -1,8 +1,8 @@
-
-
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
+			currentUser: null,
+			favourites: [],
 			message: null,
 			datos: [],
 			demo: [
@@ -20,9 +20,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			peliculasFavoritas: [],
 			peliculasPendientes: [],
 			peliculasVistas: [],
-			Blacklist: [],
-
-
+			listaNegra: [],
 		},
 		actions: {
 			exampleFunction: () => {
@@ -58,22 +56,63 @@ const getState = ({ getStore, getActions, setStore }) => {
 				});
 				setStore({ demo: demo });
 			},
-			setFavoritas: (item) => {
-				const store = getStore()
-				if (!store.peliculasFavoritas.includes(item)) {
-					setStore({ peliculasFavoritas: [...store.peliculasFavoritas, item] })
+
+			registro: async ({ email, password }) => {
+				try {
+					const response = await fetch(process.env.BACKEND_URL + '/api/users', {
+					
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'accept': 'application/json',
+							mode: 'no-cors',
+
+						},
+						body: JSON.stringify({ 'email': email, 'password': password })
+					});
+
+					if (!response.ok) {
+						console.error('Error al enviar datos');
+						throw new Error('Error al enviar datos');
+					}
+
+					const data = await response.json();
+
+					setStore({ datos: data.result });
+
+					return data;
+				} catch (error) {
+					console.error('Error:', error);
+					throw error;
 				}
 			},
-			removeFromFavoritas: (index) => {
-				const store = getStore();
-				const updatedFavoritos = [...store.peliculasFavoritas];
-				updatedFavoritos.splice(index, 1);
-				setStore({ ...store, peliculasFavoritas: updatedFavoritos });
-			},
-			setPendientes: (item) => {
-				const store = getStore()
-				if (!store.peliculasPendientes.includes(item)) {
-					setStore({ peliculasPendientes: [...store.peliculasPendientes, item] })
+
+			login: async ({ email, password }) => {
+				try {
+					const response = await fetch(process.env.BACKEND_URL + '/api/login', {
+					
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'accept': 'application/json',
+
+						},
+						body: JSON.stringify({ 'email': email, 'password': password })
+					});
+
+					if (!response.ok) {
+						console.error('Error al enviar datos');
+						throw new Error('Error al enviar datos');
+					}
+
+					const data = await response.json();
+					localStorage.setItem("jwt-token", data.token);
+					setStore({ currentUser: data });
+					await getActions().getCurrentUserFavourites(data.user_id);
+					return true;
+				} catch (error) {
+					console.error('Error:', error);
+					return false;
 				}
 			},
 			removeFromPendientes: (index) => {
@@ -107,13 +146,107 @@ const getState = ({ getStore, getActions, setStore }) => {
 				setStore({ ...store, listaNegra: updatedNegra });
 			},
 
+			logout: () => {
+				localStorage.removeItem('jwt-token');
+				setStore({ currentUser: null });
+			},
+			getCurrentUser: async () => {
+				const userId = getStore().currentUser.user_id;
+
+				try {
+					const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId, {
+						method: 'GET',
+						headers: {
+							'Content-Type': 'application/json',
+							'accept': 'application/json',
+							'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
+						}
+					});
+
+					if (!response.ok) {
+						console.error("Error consiguiendo al usuario");
+					}
+					const data = await response.json();
+					setStore({ currentUser: data });
+					return data;
+				} catch (error) {
+					console.error('Error:', error);
+					throw error;
+				}
+			},
+			addFavourite: async (userId, showId) => {
+
+				try {
+					const response = await fetch(process.env.BACKEND_URL + '/api/favoritos', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({ 'user_id': userId, 'show_id': showId }),
+					});
+
+					if (!response.ok) {
+						throw new Error('Error adding favourite');
+					}
+					const data = await response.json();
+
+					const newFavourite = { id: data.id, user_id: userId, show_id: showId };
+
+					const store = getStore();
+					setStore({
+						...store,
+						favourites: [...store.favourites, newFavourite]
+					});
+					console.log('Updated store:', getStore());
+				} catch (error) {
+					console.error('Error:', error);
+				}
+			},
+			deleteFavourite: async (favouriteId) => {
+				try {
+					const response = await fetch(process.env.BACKEND_URL + '/api/favoritos/' + favouriteId, {
+						method: 'DELETE',
+					});
+					if (!response.ok) {
+						throw new Error('Error deleting favourite');
+					}
+					const store = getStore();
+					setStore({
+						...store,
+						favourites: store.favourites.filter(fav => fav.id !== favouriteId)
+					});
+				} catch (error) {
+					console.error('Error:', error);
+				}
+			},
+			getCurrentUserFavourites: async userId => {
+				const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId + '/favoritos');
+
+				if (!response.ok) {
+					throw Error(response.statusText);
+				}
+
+				let data;
+
+				try {
+					data = await response.json();
+
+				} catch (error) {
+					console.error(error);
+				}
+
+				const store = getStore();
+
+
+				setStore({ ...store, favourites: data });
+
+				const updatedStore = getStore();
+
+			},
 		}
 	};
 };
 
-<<<<<<< HEAD
-export default getState;
-=======
 export default getState;
 // const getState = ({ getStore, getActions, setStore }) => {
 // 	return {
@@ -314,4 +447,3 @@ export default getState;
 // // };
 
 // // export default getState;
->>>>>>> main

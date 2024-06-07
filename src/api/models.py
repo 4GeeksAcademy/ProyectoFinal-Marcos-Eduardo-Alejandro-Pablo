@@ -7,8 +7,12 @@ bcrypt = Bcrypt()
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(80), unique=False, nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False, default=True)
+    password = db.Column(db.String(128), nullable=False)  # Increased length
+    is_active = db.Column(db.Boolean(), nullable=False, default=True)
+
+    # favoritos = db.relationship('Favorito', backref='user', lazy=True)
+    favoritos = db.relationship('Favorito', backref='user', lazy=True, cascade="all, delete-orphan")
+    # blacklists = db.relationship('Blacklist', backref='user', lazy=True)
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -17,7 +21,9 @@ class User(db.Model):
         return {
             "id": self.id,
             "email": self.email,
-            "password": self.password
+            "password": self.password,
+            "is_active": self.is_active,
+            
         }
 
     def set_password(self, password):
@@ -28,8 +34,8 @@ class User(db.Model):
 
 class Favorito(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    show_id = db.Column(db.Integer, nullable=False)  
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    show_id = db.Column(db.Integer, nullable=False)
 
     def serialize(self):
         return {
@@ -38,14 +44,14 @@ class Favorito(db.Model):
             "show_id": self.show_id,
         }
     
-class Blacklist(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    show_id = db.Column(db.Integer, nullable=False)  
+# class Blacklist(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+#     show_id = db.Column(db.Integer, nullable=False)
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "show_id": self.show_id,
-        }
+#     def serialize(self):
+#         return {
+#             "id": self.id,
+#             "user_id": self.user_id,
+#             "show_id": self.show_id,
+#         }

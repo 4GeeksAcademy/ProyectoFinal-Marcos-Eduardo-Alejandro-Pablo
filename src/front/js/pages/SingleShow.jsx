@@ -1,10 +1,12 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { Context } from "../store/appContext";
 
 const SingleShow = () => {
    
     const [showData, setShowData] = useState([]);
     const { id } = useParams(); 
+    const { store, actions } = useContext(Context);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -18,6 +20,9 @@ const SingleShow = () => {
         };
         fetchData();
     }, [id]);
+
+    if (!showData) return <div>Loading...</div>;
+
 
     return (
         <div className="container mt-5">
@@ -37,7 +42,8 @@ const SingleShow = () => {
                     <p>Ended: {showData.ended}</p>
                     <p>Rating: {showData.rating?.average}</p>
                     <p>Network: {showData.network?.name}</p>
-                    <a href="€" className="btn btn-primary">Añadir a fav</a>
+                    
+                    <button onClick={()=>{actions.setFavoritas(showData)}} className="btn btn-primary" >Añadir a fav</button>
                 </div>
             </div>
         </div>

@@ -20,14 +20,16 @@ export const Header = () => {
 						<li className="nav-item">
 							<Link to="/" className="nav-link active" aria-current="page" href="#">Inicio</Link>
 						</li>
-						<li className="nav-item">
-							<a className="nav-link" href="#">Mis Favoritos</a>
-							<Link to="/favoritos" className="nav-link">Mis Favoritos</Link>
-
-						</li>
-						<li className="nav-item">
-							<Link to="/perfil" className="nav-link">Mi Perfil</Link>
-						</li>
+						{store.currentUser !== null ? (
+							<li className="nav-item">
+								<Link to="/misfavoritos/" className="nav-link">Mis Favoritos</Link>
+							</li>
+						) : ""}
+						{store.currentUser !== null ? (
+							<li className="nav-item">
+								<Link to="/perfil/" className="nav-link">Mi Perfil</Link>
+							</li>
+						) : ""}
 					</ul>
 					<li className="nav-item" style={{ listStyle: "none" }}>
 						{store.currentUser !== null ? (

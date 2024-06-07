@@ -18,7 +18,6 @@ export const SearchBar = () => {
       const response = await fetch(`https://api.tvmaze.com/search/shows?q=${inputValue}`);
       const data = await response.json();
       setSearchResults(data);
-      console.log(searchResults)
 
     } catch (error) {
       console.error(error);
@@ -42,9 +41,10 @@ export const SearchBar = () => {
         <div className="container">
           <div className="row">
             <div className="col d-flex gap-5 flex-wrap">
-              {searchResults.length > 0 && searchResults.map((card, index) => (
-                <Card key={index} cardInfo={card} />
-              ))}
+              {searchResults.length > 0 && searchResults.map((card, index) => {
+                return <Card key={index} cardInfo={card} />
+              }
+              )}
             </div>
           </div>
         </div>

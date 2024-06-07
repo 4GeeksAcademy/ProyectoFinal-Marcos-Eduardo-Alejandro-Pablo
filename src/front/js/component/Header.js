@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../../img/logonegro.png"
+import { Context } from '../store/appContext';
 
 export const Header = () => {
+	const { store, actions } = useContext(Context);
+
 	return (
 		<nav className="navbar navbar-expand-lg bg-body-tertiary">
 			<div className="container">
@@ -25,7 +28,15 @@ export const Header = () => {
 						</li>
 					</ul>
 					<li className="nav-item" style={{ listStyle: "none" }}>
-						<Link to="/login/" className="nav-link" href="#">Login</Link>
+						{store.currentUser !== null ? (
+							<Link to="/perfil" className="nav-link">
+								{store.currentUser && store.currentUser.email}
+							</Link>
+						) : (
+							<Link to="/login/" className="nav-link">
+								Login
+							</Link>
+						)}
 					</li>
 				</div>
 			</div>

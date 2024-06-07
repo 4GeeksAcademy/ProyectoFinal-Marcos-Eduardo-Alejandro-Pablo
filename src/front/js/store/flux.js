@@ -74,7 +74,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 					}
 
 					const data = await response.json();
-					console.log('Datos guardados correctamente:', data);
+
 					setStore({ datos: data.result });
 
 					return data;
@@ -102,16 +102,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 					}
 
 					const data = await response.json();
-					console.log('Datos guardados correctamente:', data);
 					localStorage.setItem("jwt-token", data.token);
-					console.log(localStorage.getItem("jwt-token"));
-					console.log('Received data:', data);
-
 					setStore({ currentUser: data });
 					await getActions().getCurrentUserFavourites(data.user_id);
-					console.log(data);
-
-					console.log(getStore().currentUser);
 					return true;
 				} catch (error) {
 					console.error('Error:', error);
@@ -142,16 +135,10 @@ const getState = ({ getStore, getActions, setStore }) => {
 					});
 
 					if (!response.ok) {
-						console.error('Error retrieving user data');
-						throw new Error('Error retrieving user data');
+						console.error("Error consiguiendo al usuario");
 					}
-
 					const data = await response.json();
-					console.log('User data retrieved successfully:', data);
 					setStore({ currentUser: data });
-
-					console.log(getStore().currentUser);
-
 					return data;
 				} catch (error) {
 					console.error('Error:', error);
@@ -159,7 +146,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 			addFavourite: async (userId, showId) => {
-				console.log('Adding favourite:', userId, showId);
+
 				try {
 					const response = await fetch(process.env.BACKEND_URL + '/api/favoritos', {
 						method: 'POST',
@@ -168,14 +155,14 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 						body: JSON.stringify({ 'user_id': userId, 'show_id': showId }),
 					});
-					console.log('Response:', response);
+
 					if (!response.ok) {
 						throw new Error('Error adding favourite');
 					}
 					const data = await response.json();
-					console.log('Data:', data);
+
 					const newFavourite = { id: data.id, user_id: userId, show_id: showId };
-					console.log('New favourite:', newFavourite);
+
 					const store = getStore();
 					setStore({
 						...store,
@@ -204,12 +191,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 			getCurrentUserFavourites: async userId => {
-				console.log('Fetching favourites for user ID:', userId);
-
 				const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId + '/favoritos');
-				console.log('Response status:', response.status, 'Response ok:', response.ok);
-				console.log('Response:', response);
-				console.log('Content-Type:', response.headers.get('Content-Type'));
 
 				if (!response.ok) {
 					throw Error(response.statusText);
@@ -219,18 +201,18 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 				try {
 					data = await response.json();
-					console.log('Fetched favourites:', data);
+
 				} catch (error) {
-					console.error('Error parsing response body:', error);
+					console.error(error);
 				}
 
 				const store = getStore();
-				console.log('Store before update:', store);
+
 
 				setStore({ ...store, favourites: data });
 
 				const updatedStore = getStore();
-				console.log('Store after update:', updatedStore);
+
 			},
 		}
 	};

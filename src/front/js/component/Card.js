@@ -7,25 +7,21 @@ export const Card = ({ cardInfo }) => {
     const { store, actions } = useContext(Context);
 
     const [isFavourite, setIsFavourite] = useState(false);
-    console.log(store.currentUser);
-    console.log(store.favourites);
-    console.log(store
-    );
+
     useEffect(() => {
-        console.log('store.favourites:', store.favourites);
         setIsFavourite(store.favourites.some(fav => fav.show_id === show.id && fav.user_id === store.currentUser.id));
     }, [store.favourites]);
 
     const handleToggleFavourite = (event) => {
         event.preventDefault();
         const favourite = store.favourites.find(fav => fav.show_id === show.id && fav.user_id === store.currentUser.id);
-        console.log('favourite:', favourite); // Log favourite
+
         if (favourite) {
             actions.deleteFavourite(favourite.id, store.favourites);
-            console.log("deleted")
+
         } else {
             actions.addFavourite(store.currentUser.id, show.id, store.favourites);
-            console.log("added")
+
         }
     };
 

@@ -1,17 +1,19 @@
 import React, { useState, useContext } from "react";
 import { Context } from "../store/appContext";
+import { useNavigate } from "react-router-dom";
+
 
 const PaginaRegistro = () => {
 
     const { store, actions } = useContext(Context);
     const [userInput, setUserInput] = useState({});
-
+    const navigate = useNavigate();
     const handleSubmit = (e) => {
         e.preventDefault();
         actions.registro(userInput)
             .then(() => {
                 console.log(userInput);
-                window.location.href = "/perfil/";
+                navigate("/perfil/");
             });
     };
 

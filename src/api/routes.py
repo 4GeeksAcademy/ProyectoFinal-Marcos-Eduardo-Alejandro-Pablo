@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, Blueprint, Response
 from api.models import db, Favorito,  User
 from api.utils import APIException
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 api = Blueprint('api', __name__)
@@ -59,6 +59,14 @@ def delete_favorito(favorito_id):
     db.session.commit()
     return '', 204
 
+@api.route('/users/<int:user_id>/favoritos', methods=['GET'])
+def get_user_favoritos(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+    favoritos = Favorito.query.filter_by(user_id=user_id).all()
+    return jsonify([favorito.serialize() for favorito in favoritos]), 200
+
 # Parte de la Lista negra
 
 # @api.route('/blacklist', methods=['GET'])
@@ -110,6 +118,7 @@ def delete_favorito(favorito_id):
 #     return '', 204
 
 @api.route('/users', methods=['POST'])
+@cross_origin(origin='*')
 def add_user():
     request_data = request.get_json()
     if not request_data or 'email' not in request_data or 'password' not in request_data:
@@ -123,12 +132,14 @@ def add_user():
     return jsonify(new_user.serialize())
 
 @api.route('/users', methods=['GET'])
+@cross_origin(origin='*')
 def handle_users():
     users = User.query.all()
     all_users = list(map(lambda x: x.serialize(), users))
     return jsonify(all_users), 200
 
 @api.route('/login', methods=['OPTIONS'])
+@cross_origin(origin='*')
 def options():
     response = Response()
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -137,6 +148,7 @@ def options():
     return response
 
 @api.route('/login', methods=['POST', 'OPTIONS'])
+@cross_origin(origin='*')
 def create_token():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
@@ -149,6 +161,7 @@ def create_token():
     return jsonify({"token": access_token, "user_id": user.id})
 
 @api.route('/protected', methods=['GET'])
+@cross_origin(origin='*')
 @jwt_required()
 def protected():
     current_user_id = get_jwt_identity()
@@ -156,6 +169,7 @@ def protected():
     return jsonify({"id": user.id, "email": user.email}), 200
 
 @api.route('/users/<int:user_id>', methods=['DELETE'])
+@cross_origin(origin='*')
 def delete_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -166,6 +180,7 @@ def delete_user(user_id):
     return '', 204
 
 @api.route('/users/<int:user_id>', methods=['GET'])
+@cross_origin(origin='*')
 def get_user(user_id):
     user = User.query.get(user_id)
     if not user:

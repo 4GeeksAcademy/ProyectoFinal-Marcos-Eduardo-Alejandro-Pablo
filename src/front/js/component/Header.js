@@ -19,6 +19,8 @@ export const Header = () => {
 						</li>
 						<li className="nav-item">
 							<a className="nav-link" href="#">Mis Favoritos</a>
+							<Link to="/favoritos" className="nav-link">Mis Favoritos</Link>
+
 						</li>
 						<li className="nav-item">
 							<Link to="/perfil" className="nav-link">Mi Perfil</Link>

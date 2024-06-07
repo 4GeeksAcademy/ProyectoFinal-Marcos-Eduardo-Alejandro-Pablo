@@ -159,6 +159,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 				if (!store.peliculasFavoritas.some(fav => fav.id === item.id)) {
 					setStore({ peliculasFavoritas: [...store.peliculasFavoritas, item] });
 				}
+				console.log("La película se ha añadido a la lista de favoritas. "+item.name);
 			},
 			removeFromFavoritas: (index) => {
 				const store = getStore();

@@ -14,8 +14,6 @@ const PaginaLogin = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const success = await actions.login(userInput);
-        console.log(success);
-        console.log(userInput);
         if (success) {
             navigate('/perfil/');
         } else {

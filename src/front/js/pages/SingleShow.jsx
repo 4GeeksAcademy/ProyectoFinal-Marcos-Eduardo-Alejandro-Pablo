@@ -9,6 +9,13 @@ const SingleShow = () => {
     const { store, actions } = useContext(Context);
     const [inputValue, setInputValue] = useState("")
     const [Todolist, setTodolist] = useState([])
+    const [UserData, setUserData] = useState([])
+
+    useEffect(() => {
+
+        setUserData(store.currentUser)
+
+    }, [store.currentUser]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,8 +60,9 @@ const SingleShow = () => {
                             value={inputValue}
                             onKeyUp={(e) => {
                                 if (e.key === "Enter" && inputValue.trim().length > 0) {
-                                    const currentUser = actions.getCurrentUser();
-                                    setTodolist(Todolist.concat([{ text: inputValue, userId: currentUser.id }]));
+
+                                    console.log(UserData);
+                                    setTodolist(Todolist.concat([{ text: inputValue, userId: UserData.id }]));
                                     setInputValue("");
                                 }
                             }}

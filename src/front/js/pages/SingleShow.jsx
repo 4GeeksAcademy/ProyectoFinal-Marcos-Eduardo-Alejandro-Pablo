@@ -3,10 +3,12 @@ import { useParams } from "react-router-dom";
 import { Context } from "../store/appContext";
 
 const SingleShow = () => {
-   
+
     const [showData, setShowData] = useState([]);
-    const { id } = useParams(); 
+    const { id } = useParams();
     const { store, actions } = useContext(Context);
+    const [inputValue, setInputValue] = useState("")
+    const [Todolist, setTodolist] = useState([])
 
     useEffect(() => {
         const fetchData = async () => {
@@ -42,8 +44,35 @@ const SingleShow = () => {
                     <p>Ended: {showData.ended}</p>
                     <p>Rating: {showData.rating?.average}</p>
                     <p>Network: {showData.network?.name}</p>
-                    
-                    <button onClick={()=>{actions.setFavoritas(showData)}} className="btn btn-primary" >Añadir a fav</button>
+
+
+                    <div>
+                        <input
+                            type="text"
+                            onChange={(e) => setInputValue(e.target.value)}
+                            value={inputValue}
+                            onKeyUp={(e) => {
+                                if (e.key === "Enter" && inputValue.trim().length > 0) {
+                                    const currentUser = actions.getCurrentUser();
+                                    setTodolist(Todolist.concat([{ text: inputValue, userId: currentUser.id }]));
+                                    setInputValue("");
+                                }
+                            }}
+                            placeholder="Deja tu opinión"
+                        />
+                        {Todolist.map((item, index) => (
+                            <div key={index}>
+                                {item.text} <strong>(Usuario ID: {item.userId})</strong>
+                                <i
+                                    className="fas fa-trash-alt float-end"
+                                    onClick={() => setTodolist(Todolist.filter((_, currentIndex) => index !== currentIndex))}
+                                ></i>
+                            </div>
+                        ))}
+                    </div>
+
+
+                    <button onClick={() => { actions.setFavoritas(showData) }} className="btn btn-primary" >Añadir a fav</button>
                 </div>
             </div>
         </div>

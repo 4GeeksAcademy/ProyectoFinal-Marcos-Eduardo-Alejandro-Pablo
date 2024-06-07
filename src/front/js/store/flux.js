@@ -168,7 +168,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 						...store,
 						favourites: [...store.favourites, newFavourite]
 					});
-					console.log('Updated store:', getStore());
+
 				} catch (error) {
 					console.error('Error:', error);
 				}
@@ -192,27 +192,18 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			getCurrentUserFavourites: async userId => {
 				const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId + '/favoritos');
-
 				if (!response.ok) {
 					throw Error(response.statusText);
 				}
-
 				let data;
-
 				try {
 					data = await response.json();
 
 				} catch (error) {
 					console.error(error);
 				}
-
 				const store = getStore();
-
-
 				setStore({ ...store, favourites: data });
-
-				const updatedStore = getStore();
-
 			},
 		}
 	};

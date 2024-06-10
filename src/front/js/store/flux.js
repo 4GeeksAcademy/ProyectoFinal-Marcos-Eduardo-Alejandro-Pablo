@@ -1,5 +1,3 @@
-
-
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
@@ -24,18 +22,16 @@ const getState = ({ getStore, getActions, setStore }) => {
 			exampleFunction: () => {
 				getActions().changeColor(0, "green");
 			},
-
 			// getMessage: async () => {
-			// 	try {
-			// 		const resp = await fetch(process.env.BACKEND_URL + "/api/hello");
-			// 		const data = await resp.json();
-			// 		setStore({ message: data.message });
-			// 		return data;
-			// 	} catch (error) {
-			// 		console.log("Error loading message from backend", error);
-			// 	}
+			//  try {
+			//      const resp = await fetch(process.env.BACKEND_URL + "/api/hello");
+			//      const data = await resp.json();
+			//      setStore({ message: data.message });
+			//      return data;
+			//  } catch (error) {
+			//      console.log("Error loading message from backend", error);
+			//  }
 			// },
-
 			getMessage: async () => {
 				try {
 					// const resp = await fetch(process.env.BACKEND_URL + "/api/hello");
@@ -54,37 +50,32 @@ const getState = ({ getStore, getActions, setStore }) => {
 				});
 				setStore({ demo: demo });
 			},
-
 			registro: async ({ email, password }) => {
 				try {
-					const response = await fetch('https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/api/users', {
+					const response = await fetch(process.env.BACKEND_URL + '/api/users', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
-							'accept': 'application/json'
+							'accept': 'application/json',
+							mode: 'no-cors',
 						},
 						body: JSON.stringify({ 'email': email, 'password': password })
 					});
-
 					if (!response.ok) {
 						console.error('Error al enviar datos');
 						throw new Error('Error al enviar datos');
 					}
-
 					const data = await response.json();
-
 					setStore({ datos: data.result });
-
 					return data;
 				} catch (error) {
 					console.error('Error:', error);
 					throw error;
 				}
 			},
-
 			login: async ({ email, password }) => {
 				try {
-					const response = await fetch('https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/api/login', {
+					const response = await fetch(process.env.BACKEND_URL + '/api/login', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
@@ -92,12 +83,10 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 						body: JSON.stringify({ 'email': email, 'password': password })
 					});
-
 					if (!response.ok) {
 						console.error('Error al enviar datos');
 						throw new Error('Error al enviar datos');
 					}
-
 					const data = await response.json();
 					localStorage.setItem("jwt-token", data.token);
 					setStore({ currentUser: data });
@@ -108,30 +97,25 @@ const getState = ({ getStore, getActions, setStore }) => {
 					return false;
 				}
 			},
-
 			getToken: () => {
 				const token = localStorage.getItem('jwt-token');
 				return !!token;
 			},
-
 			logout: () => {
 				localStorage.removeItem('jwt-token');
 				setStore({ currentUser: null });
 			},
 			getCurrentUser: async () => {
 				const userId = getStore().currentUser.user_id;
-
 				try {
-					const response = await fetch(`https://potential-space-palm-tree-4j6p74jxpxjh547-3001.app.github.dev/api/users/${userId}`, {
+					const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId, {
 						method: 'GET',
 						headers: {
 							'Content-Type': 'application/json',
 							'accept': 'application/json',
-							'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`,
-							mode: 'no-cors'
+							'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
 						}
 					});
-
 					if (!response.ok) {
 						console.error("Error consiguiendo al usuario");
 					}
@@ -144,7 +128,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 			addFavourite: async (userId, showId) => {
-
 				try {
 					const response = await fetch(process.env.BACKEND_URL + '/api/favoritos', {
 						method: 'POST',
@@ -153,20 +136,16 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 						body: JSON.stringify({ 'user_id': userId, 'show_id': showId }),
 					});
-
 					if (!response.ok) {
 						throw new Error('Error adding favourite');
 					}
 					const data = await response.json();
-
 					const newFavourite = { id: data.id, user_id: userId, show_id: showId };
-
 					const store = getStore();
 					setStore({
 						...store,
 						favourites: [...store.favourites, newFavourite]
 					});
-
 				} catch (error) {
 					console.error('Error:', error);
 				}
@@ -196,7 +175,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 				let data;
 				try {
 					data = await response.json();
-
 				} catch (error) {
 					console.error(error);
 				}
@@ -206,5 +184,4 @@ const getState = ({ getStore, getActions, setStore }) => {
 		}
 	};
 };
-
 export default getState;

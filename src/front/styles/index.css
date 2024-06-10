@@ -19,6 +19,10 @@ body {
 .modal-footer {
     border-top: none;
 }
+
+.description {
+    max-height: 80%;
+}
 .navbar {
     color: #151515 !important;
     background-color: #A91D3A !important;

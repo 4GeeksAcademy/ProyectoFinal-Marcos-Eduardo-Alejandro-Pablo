@@ -5,6 +5,7 @@ import "../../styles/home.css";
 import { SearchBar } from "../component/SearchBar";
 import { Card } from "../component/Card";
 import { CardDetallePelicula } from "../component/CardDetallePelicula";
+import { AiringToday } from "../component/AiringToday";
 
 
 
@@ -13,7 +14,7 @@ export const Home = () => {
 	return (
 		<>
 			<SearchBar />
-
+			<AiringToday />
 		</>
 	);
 };

@@ -7,7 +7,18 @@ body {
     background-color: #151515;
     color: #eee;
 }
+.modal-content{
+    background-color: #151515;
 
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+.modal-footer {
+    border-top: none;
+}
 .navbar {
     color: #151515 !important;
     background-color: #A91D3A !important;

@@ -6,6 +6,8 @@ import { BackendURL } from "./component/backendURL";
 import { Home } from "./pages/home";
 import { Demo } from "./pages/demo";
 import { Single } from "./pages/single";
+import { ResetPassword } from "./pages/ResetPassword";
+import { ForgotPassword } from "./pages/ForgotPassword";
 import SingleShow from "./pages/SingleShow.jsx";
 
 import PerfilUsuario from "./pages/PerfilUsuario.jsx";
@@ -45,6 +47,8 @@ const Layout = () => {
                                 <Route element={<PaginaLogin />} path="/login/" />
                                 <Route element={<PaginaRegistro />} path="/registro/" />
                                 <Route element={<h1>Not found!</h1>} />
+                                <Route element={<ForgotPassword />} path="/forgotpassword" />
+                                <Route element={<ResetPassword />} path="/resetpassword/:user_uuid" />
                             </Routes>
                         </div>
                     </div>

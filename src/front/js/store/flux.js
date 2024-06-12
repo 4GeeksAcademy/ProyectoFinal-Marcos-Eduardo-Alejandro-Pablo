@@ -97,6 +97,50 @@ const getState = ({ getStore, getActions, setStore }) => {
 					return false;
 				}
 			},
+			forgotPassword: async (email) => {
+				try {
+					const response = await fetch(process.env.BACKEND_URL + 'api/forgot-password', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ email })
+					});
+
+					if (!response.ok) {
+						console.error('Error al enviar datos');
+						throw new Error('Error al enviar datos');
+					}
+
+					const data = await response.json();
+					console.log('Correo de recuperación enviado:', data);
+				} catch (error) {
+					console.error('Error:', error);
+				}
+			},
+
+			resetPassword: async (password, user_uuid) => {
+				try {
+					const response = await fetch(process.env.BACKEND_URL + 'api/reset-password/', {
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							//'Authorization': `Bearer ${token}`
+						},
+						body: JSON.stringify({ password, user_uuid })
+					});
+
+					if (!response.ok) {
+						console.error('Error al enviar datos');
+						throw new Error('Error al enviar datos');
+					}
+
+					const data = await response.json();
+					console.log('Contraseña restablecida:', data);
+				} catch (error) {
+					console.error('Error:', error);
+				}
+			},
 			getToken: () => {
 				const token = localStorage.getItem('jwt-token');
 				return !!token;

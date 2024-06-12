@@ -11,6 +11,7 @@ from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_cors import CORS, cross_origin
+from api.routes import api, configure_mail  # Importar la función de configuración de mail
 
 
 from flask_jwt_extended import JWTManager
@@ -40,6 +41,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
+configure_mail(app)
 # add the admin
 setup_admin(app)
 

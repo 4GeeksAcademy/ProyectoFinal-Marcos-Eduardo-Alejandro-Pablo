@@ -1,13 +1,3 @@
-# testing/provision.py
-# Copyright (C) 2005-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-# mypy: ignore-errors
-
-from __future__ import annotations
-
 import collections
 import logging
 
@@ -19,6 +9,7 @@ from .. import inspect
 from ..engine import url as sa_url
 from ..sql import ddl
 from ..sql import schema
+from ..util import compat
 
 
 log = logging.getLogger(__name__)
@@ -26,31 +17,24 @@ log = logging.getLogger(__name__)
 FOLLOWER_IDENT = None
 
 
-class register:
-    def __init__(self, decorator=None):
+class register(object):
+    def __init__(self):
         self.fns = {}
-        self.decorator = decorator
 
     @classmethod
     def init(cls, fn):
         return register().for_db("*")(fn)
 
-    @classmethod
-    def init_decorator(cls, decorator):
-        return register(decorator).for_db("*")
-
     def for_db(self, *dbnames):
         def decorate(fn):
-            if self.decorator:
-                fn = self.decorator(fn)
             for dbname in dbnames:
                 self.fns[dbname] = fn
             return self
 
         return decorate
 
-    def __call__(self, cfg, *arg, **kw):
-        if isinstance(cfg, str):
+    def __call__(self, cfg, *arg):
+        if isinstance(cfg, compat.string_types):
             url = sa_url.make_url(cfg)
         elif isinstance(cfg, sa_url.URL):
             url = cfg
@@ -58,9 +42,9 @@ class register:
             url = cfg.db.url
         backend = url.get_backend_name()
         if backend in self.fns:
-            return self.fns[backend](cfg, *arg, **kw)
+            return self.fns[backend](cfg, *arg)
         else:
-            return self.fns["*"](cfg, *arg, **kw)
+            return self.fns["*"](cfg, *arg)
 
 
 def create_follower_db(follower_ident):
@@ -74,13 +58,12 @@ def setup_config(db_url, options, file_config, follower_ident):
     # hooks
 
     dialect = sa_url.make_url(db_url).get_dialect()
-
     dialect.load_provisioning()
 
     if follower_ident:
         db_url = follower_url_from_main(db_url, follower_ident)
     db_opts = {}
-    update_db_opts(db_url, db_opts, options)
+    update_db_opts(db_url, db_opts)
     db_opts["scope"] = "global"
     eng = engines.testing_engine(db_url, db_opts)
     post_configure_engine(db_url, eng, follower_ident)
@@ -147,10 +130,7 @@ def generate_db_urls(db_urls, extra_drivers):
     ]
 
     for url_obj, dialect in urls_plus_dialects:
-        # use get_driver_name instead of dialect.driver to account for
-        # "_async" virtual drivers like oracledb and psycopg
-        driver_name = url_obj.get_driver_name()
-        backend_to_driver_we_already_have[dialect.name].add(driver_name)
+        backend_to_driver_we_already_have[dialect.name].add(dialect.driver)
 
     backend_to_driver_we_need = {}
 
@@ -177,10 +157,12 @@ def _generate_driver_urls(url, extra_drivers):
     extra_drivers.discard(main_driver)
 
     url = generate_driver_url(url, main_driver, "")
-    yield url
+    yield str(url)
 
     for drv in list(extra_drivers):
+
         if "?" in drv:
+
             driver_only, query_str = drv.split("?", 1)
 
         else:
@@ -191,7 +173,7 @@ def _generate_driver_urls(url, extra_drivers):
         if new_url:
             extra_drivers.remove(drv)
 
-            yield new_url
+            yield str(new_url)
 
 
 @register.init
@@ -242,19 +224,43 @@ def drop_all_schema_objects_post_tables(cfg, eng):
 
 
 def drop_all_schema_objects(cfg, eng):
+
     drop_all_schema_objects_pre_tables(cfg, eng)
 
-    drop_views(cfg, eng)
-
-    if config.requirements.materialized_views.enabled:
-        drop_materialized_views(cfg, eng)
-
     inspector = inspect(eng)
+    try:
+        view_names = inspector.get_view_names()
+    except NotImplementedError:
+        pass
+    else:
+        with eng.begin() as conn:
+            for vname in view_names:
+                conn.execute(
+                    ddl._DropView(schema.Table(vname, schema.MetaData()))
+                )
 
-    consider_schemas = (None,)
     if config.requirements.schemas.enabled_for_config(cfg):
-        consider_schemas += (cfg.test_schema, cfg.test_schema_2)
-    util.drop_all_tables(eng, inspector, consider_schemas=consider_schemas)
+        try:
+            view_names = inspector.get_view_names(schema="test_schema")
+        except NotImplementedError:
+            pass
+        else:
+            with eng.begin() as conn:
+                for vname in view_names:
+                    conn.execute(
+                        ddl._DropView(
+                            schema.Table(
+                                vname,
+                                schema.MetaData(),
+                                schema="test_schema",
+                            )
+                        )
+                    )
+
+    util.drop_all_tables(eng, inspector)
+    if config.requirements.schemas.enabled_for_config(cfg):
+        util.drop_all_tables(eng, inspector, schema=cfg.test_schema)
+        util.drop_all_tables(eng, inspector, schema=cfg.test_schema_2)
 
     drop_all_schema_objects_post_tables(cfg, eng)
 
@@ -272,59 +278,6 @@ def drop_all_schema_objects(cfg, eng):
                                 schema.Sequence(seq, schema=schema_name)
                             )
                         )
-
-
-def drop_views(cfg, eng):
-    inspector = inspect(eng)
-
-    try:
-        view_names = inspector.get_view_names()
-    except NotImplementedError:
-        pass
-    else:
-        with eng.begin() as conn:
-            for vname in view_names:
-                conn.execute(
-                    ddl._DropView(schema.Table(vname, schema.MetaData()))
-                )
-
-    if config.requirements.schemas.enabled_for_config(cfg):
-        try:
-            view_names = inspector.get_view_names(schema=cfg.test_schema)
-        except NotImplementedError:
-            pass
-        else:
-            with eng.begin() as conn:
-                for vname in view_names:
-                    conn.execute(
-                        ddl._DropView(
-                            schema.Table(
-                                vname,
-                                schema.MetaData(),
-                                schema=cfg.test_schema,
-                            )
-                        )
-                    )
-
-
-def drop_materialized_views(cfg, eng):
-    inspector = inspect(eng)
-
-    mview_names = inspector.get_materialized_view_names()
-
-    with eng.begin() as conn:
-        for vname in mview_names:
-            conn.exec_driver_sql(f"DROP MATERIALIZED VIEW {vname}")
-
-    if config.requirements.schemas.enabled_for_config(cfg):
-        mview_names = inspector.get_materialized_view_names(
-            schema=cfg.test_schema
-        )
-        with eng.begin() as conn:
-            for vname in mview_names:
-                conn.exec_driver_sql(
-                    f"DROP MATERIALIZED VIEW {cfg.test_schema}.{vname}"
-                )
 
 
 @register.init
@@ -345,17 +298,10 @@ def drop_db(cfg, eng, ident):
     raise NotImplementedError("no DB drop routine for cfg: %s" % (eng.url,))
 
 
-def _adapt_update_db_opts(fn):
-    insp = util.inspect_getfullargspec(fn)
-    if len(insp.args) == 3:
-        return fn
-    else:
-        return lambda db_url, db_opts, _options: fn(db_url, db_opts)
-
-
-@register.init_decorator(_adapt_update_db_opts)
-def update_db_opts(db_url, db_opts, options):
+@register.init
+def update_db_opts(db_url, db_opts):
     """Set database options (db_opts) for a test database that we created."""
+    pass
 
 
 @register.init
@@ -364,6 +310,7 @@ def post_configure_engine(url, engine, follower_ident):
 
     (For the internal dialects, currently only used by sqlite, oracle)
     """
+    pass
 
 
 @register.init
@@ -394,6 +341,7 @@ def run_reap_dbs(url, ident):
     use. For the internal dialects, this is currently only necessary for
     mssql and oracle.
     """
+    pass
 
 
 def reap_dbs(idents_file):
@@ -466,31 +414,3 @@ def set_default_schema_on_connection(cfg, dbapi_connection, schema_name):
         "backend does not implement a schema name set function: %s"
         % (cfg.db.url,)
     )
-
-
-@register.init
-def upsert(
-    cfg, table, returning, *, set_lambda=None, sort_by_parameter_order=False
-):
-    """return the backends insert..on conflict / on dupe etc. construct.
-
-    while we should add a backend-neutral upsert construct as well, such as
-    insert().upsert(), it's important that we continue to test the
-    backend-specific insert() constructs since if we do implement
-    insert().upsert(), that would be using a different codepath for the things
-    we need to test like insertmanyvalues, etc.
-
-    """
-    raise NotImplementedError(
-        f"backend does not include an upsert implementation: {cfg.db.url}"
-    )
-
-
-@register.init
-def normalize_sequence(cfg, sequence):
-    """Normalize sequence parameters for dialect that don't start with 1
-    by default.
-
-    The default implementation does nothing
-    """
-    return sequence

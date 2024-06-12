@@ -1,11 +1,3 @@
-# testing/suite/test_deprecations.py
-# Copyright (C) 2005-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-# mypy: ignore-errors
-
 from .. import fixtures
 from ..assertions import eq_
 from ..schema import Column

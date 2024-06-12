@@ -1,11 +1,3 @@
-# dialects/mssql/json.py
-# Copyright (C) 2005-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-# mypy: ignore-errors
-
 from ... import types as sqltypes
 
 # technically, all the dialect-specific datatypes that don't have any special
@@ -85,7 +77,7 @@ class JSON(sqltypes.JSON):
 # Note: these objects currently match exactly those of MySQL, however since
 # these are not generalizable to all JSON implementations, remain separately
 # implemented for each dialect.
-class _FormatTypeMixin:
+class _FormatTypeMixin(object):
     def _format_value(self, value):
         raise NotImplementedError()
 

@@ -1,12 +1,3 @@
-# ext/mypy/util.py
-# Copyright (C) 2021-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-
-from __future__ import annotations
-
 import re
 from typing import Any
 from typing import Iterable
@@ -19,41 +10,30 @@ from typing import Type as TypingType
 from typing import TypeVar
 from typing import Union
 
-from mypy import version
-from mypy.messages import format_type as _mypy_format_type
+from mypy.nodes import ARG_POS
 from mypy.nodes import CallExpr
 from mypy.nodes import ClassDef
 from mypy.nodes import CLASSDEF_NO_INFO
 from mypy.nodes import Context
 from mypy.nodes import Expression
-from mypy.nodes import FuncDef
 from mypy.nodes import IfStmt
 from mypy.nodes import JsonDict
 from mypy.nodes import MemberExpr
 from mypy.nodes import NameExpr
 from mypy.nodes import Statement
 from mypy.nodes import SymbolTableNode
-from mypy.nodes import TypeAlias
 from mypy.nodes import TypeInfo
-from mypy.options import Options
 from mypy.plugin import ClassDefContext
 from mypy.plugin import DynamicClassDefContext
 from mypy.plugin import SemanticAnalyzerPluginInterface
 from mypy.plugins.common import deserialize_and_fixup_type
 from mypy.typeops import map_type_from_supertype
-from mypy.types import CallableType
-from mypy.types import get_proper_type
 from mypy.types import Instance
 from mypy.types import NoneType
 from mypy.types import Type
 from mypy.types import TypeVarType
 from mypy.types import UnboundType
 from mypy.types import UnionType
-
-_vers = tuple(
-    [int(x) for x in version.__version__.split(".") if re.match(r"^\d+$", x)]
-)
-mypy_14 = _vers >= (1, 4)
 
 
 _TArgType = TypeVar("_TArgType", bound=Union[CallExpr, NameExpr])
@@ -98,13 +78,13 @@ class SQLAlchemyAttribute:
         info: TypeInfo,
         data: JsonDict,
         api: SemanticAnalyzerPluginInterface,
-    ) -> SQLAlchemyAttribute:
+    ) -> "SQLAlchemyAttribute":
         data = data.copy()
         typ = deserialize_and_fixup_type(data.pop("type"), api)
         return cls(typ=typ, info=info, **data)
 
 
-def name_is_dunder(name: str) -> bool:
+def name_is_dunder(name):
     return bool(re.match(r"^__.+?__$", name))
 
 
@@ -171,13 +151,6 @@ def get_mapped_attributes(
     return attributes
 
 
-def format_type(typ_: Type, options: Options) -> str:
-    if mypy_14:
-        return _mypy_format_type(typ_, options)
-    else:
-        return _mypy_format_type(typ_)  # type: ignore
-
-
 def set_mapped_attributes(
     info: TypeInfo, attributes: List[SQLAlchemyAttribute]
 ) -> None:
@@ -212,7 +185,8 @@ def add_global(
 @overload
 def get_callexpr_kwarg(
     callexpr: CallExpr, name: str, *, expr_types: None = ...
-) -> Optional[Union[CallExpr, NameExpr]]: ...
+) -> Optional[Union[CallExpr, NameExpr]]:
+    ...
 
 
 @overload
@@ -220,15 +194,16 @@ def get_callexpr_kwarg(
     callexpr: CallExpr,
     name: str,
     *,
-    expr_types: Tuple[TypingType[_TArgType], ...],
-) -> Optional[_TArgType]: ...
+    expr_types: Tuple[TypingType[_TArgType], ...]
+) -> Optional[_TArgType]:
+    ...
 
 
 def get_callexpr_kwarg(
     callexpr: CallExpr,
     name: str,
     *,
-    expr_types: Optional[Tuple[TypingType[Any], ...]] = None,
+    expr_types: Optional[Tuple[TypingType[Any], ...]] = None
 ) -> Optional[Any]:
     try:
         arg_idx = callexpr.arg_names.index(name)
@@ -251,28 +226,10 @@ def flatten_typechecking(stmts: Iterable[Statement]) -> Iterator[Statement]:
             and isinstance(stmt.expr[0], NameExpr)
             and stmt.expr[0].fullname == "typing.TYPE_CHECKING"
         ):
-            yield from stmt.body[0].body
+            for substmt in stmt.body[0].body:
+                yield substmt
         else:
             yield stmt
-
-
-def type_for_callee(callee: Expression) -> Optional[Union[Instance, TypeInfo]]:
-    if isinstance(callee, (MemberExpr, NameExpr)):
-        if isinstance(callee.node, FuncDef):
-            if callee.node.type and isinstance(callee.node.type, CallableType):
-                ret_type = get_proper_type(callee.node.type.ret_type)
-
-                if isinstance(ret_type, Instance):
-                    return ret_type
-
-            return None
-        elif isinstance(callee.node, TypeAlias):
-            target_type = get_proper_type(callee.node.target)
-            if isinstance(target_type, Instance):
-                return target_type
-        elif isinstance(callee.node, TypeInfo):
-            return callee.node
-    return None
 
 
 def unbound_to_instance(
@@ -289,7 +246,7 @@ def unbound_to_instance(
 
     # TODO: figure out a more robust way to check this.  The node is some
     # kind of _SpecialForm, there's a typing.Optional that's _SpecialForm,
-    # but I can't figure out how to get them to match up
+    # but I cant figure out how to get them to match up
     if typ.name == "Optional":
         # convert from "Optional?" to the more familiar
         # UnionType[..., NoneType()]
@@ -313,11 +270,9 @@ def unbound_to_instance(
         return Instance(
             bound_type,
             [
-                (
-                    unbound_to_instance(api, arg)
-                    if isinstance(arg, UnboundType)
-                    else arg
-                )
+                unbound_to_instance(api, arg)
+                if isinstance(arg, UnboundType)
+                else arg
                 for arg in typ.args
             ],
         )
@@ -336,3 +291,15 @@ def info_for_cls(
         return sym.node
 
     return cls.info
+
+
+def expr_to_mapped_constructor(expr: Expression) -> CallExpr:
+    column_descriptor = NameExpr("__sa_Mapped")
+    column_descriptor.fullname = "sqlalchemy.orm.attributes.Mapped"
+    member_expr = MemberExpr(column_descriptor, "_empty_constructor")
+    return CallExpr(
+        member_expr,
+        [expr],
+        [ARG_POS],
+        ["arg1"],
+    )

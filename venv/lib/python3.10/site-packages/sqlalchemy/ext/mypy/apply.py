@@ -1,11 +1,9 @@
 # ext/mypy/apply.py
-# Copyright (C) 2021-2024 the SQLAlchemy authors and contributors
+# Copyright (C) 2021 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
-
-from __future__ import annotations
 
 from typing import List
 from typing import Optional
@@ -38,7 +36,6 @@ from mypy.types import UnionType
 
 from . import infer
 from . import util
-from .names import expr_to_mapped_constructor
 from .names import NAMED_TYPE_SQLA_MAPPED
 
 
@@ -63,7 +60,7 @@ def apply_mypy_mapped_attr(
         ):
             break
     else:
-        util.fail(api, f"Can't find mapped attribute {name}", cls)
+        util.fail(api, "Can't find mapped attribute {}".format(name), cls)
         return None
 
     if stmt.type is None:
@@ -118,8 +115,8 @@ def re_apply_declarative_assignments(
             and stmt.lvalues[0].name in mapped_attr_lookup
             and isinstance(stmt.lvalues[0].node, Var)
         ):
-            left_node = stmt.lvalues[0].node
 
+            left_node = stmt.lvalues[0].node
             python_type_for_type = mapped_attr_lookup[
                 stmt.lvalues[0].name
             ].type
@@ -144,7 +141,8 @@ def re_apply_declarative_assignments(
                     and isinstance(stmt.rvalue.args[0].callee, RefExpr)
                 )
             ):
-                new_python_type_for_type = (
+
+                python_type_for_type = (
                     infer.infer_type_from_right_hand_nameexpr(
                         api,
                         stmt,
@@ -154,24 +152,19 @@ def re_apply_declarative_assignments(
                     )
                 )
 
-                if new_python_type_for_type is not None and not isinstance(
-                    new_python_type_for_type, UnboundType
+                if python_type_for_type is None or isinstance(
+                    python_type_for_type, UnboundType
                 ):
-                    python_type_for_type = new_python_type_for_type
+                    continue
 
-                    # update the SQLAlchemyAttribute with the better
-                    # information
-                    mapped_attr_lookup[stmt.lvalues[0].name].type = (
-                        python_type_for_type
-                    )
+                # update the SQLAlchemyAttribute with the better information
+                mapped_attr_lookup[
+                    stmt.lvalues[0].name
+                ].type = python_type_for_type
 
-                    update_cls_metadata = True
+                update_cls_metadata = True
 
-            if (
-                not isinstance(left_node.type, Instance)
-                or left_node.type.type.fullname != NAMED_TYPE_SQLA_MAPPED
-            ):
-                assert python_type_for_type is not None
+            if python_type_for_type is not None:
                 left_node.type = api.named_type(
                     NAMED_TYPE_SQLA_MAPPED, [python_type_for_type]
                 )
@@ -208,14 +201,7 @@ def apply_type_to_mapped_statement(
     left_node = lvalue.node
     assert isinstance(left_node, Var)
 
-    # to be completely honest I have no idea what the difference between
-    # left_node.type and stmt.type is, what it means if these are different
-    # vs. the same, why in order to get tests to pass I have to assign
-    # to stmt.type for the second case and not the first.  this is complete
-    # trying every combination until it works stuff.
-
     if left_hand_explicit_type is not None:
-        lvalue.is_inferred_def = False
         left_node.type = api.named_type(
             NAMED_TYPE_SQLA_MAPPED, [left_hand_explicit_type]
         )
@@ -223,11 +209,7 @@ def apply_type_to_mapped_statement(
         lvalue.is_inferred_def = False
         left_node.type = api.named_type(
             NAMED_TYPE_SQLA_MAPPED,
-            (
-                [AnyType(TypeOfAny.special_form)]
-                if python_type_for_type is None
-                else [python_type_for_type]
-            ),
+            [] if python_type_for_type is None else [python_type_for_type],
         )
 
     # so to have it skip the right side totally, we can do this:
@@ -242,10 +224,7 @@ def apply_type_to_mapped_statement(
     # _sa_Mapped._empty_constructor(<original CallExpr from rvalue>)
     # the original right-hand side is maintained so it gets type checked
     # internally
-    stmt.rvalue = expr_to_mapped_constructor(stmt.rvalue)
-
-    if stmt.type is not None and python_type_for_type is not None:
-        stmt.type = python_type_for_type
+    stmt.rvalue = util.expr_to_mapped_constructor(stmt.rvalue)
 
 
 def add_additional_orm_attributes(

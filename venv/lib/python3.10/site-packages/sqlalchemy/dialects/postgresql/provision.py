@@ -1,11 +1,3 @@
-# dialects/postgresql/provision.py
-# Copyright (C) 2005-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-# mypy: ignore-errors
-
 import time
 
 from ... import exc
@@ -17,11 +9,9 @@ from ...testing.provision import drop_all_schema_objects_post_tables
 from ...testing.provision import drop_all_schema_objects_pre_tables
 from ...testing.provision import drop_db
 from ...testing.provision import log
-from ...testing.provision import post_configure_engine
 from ...testing.provision import prepare_for_drop_tables
 from ...testing.provision import set_default_schema_on_connection
 from ...testing.provision import temp_table_keyword_args
-from ...testing.provision import upsert
 
 
 @create_db.for_db("postgresql")
@@ -29,6 +19,7 @@ def _pg_create_db(cfg, eng, ident):
     template_db = cfg.options.postgresql_templatedb
 
     with eng.execution_options(isolation_level="AUTOCOMMIT").begin() as conn:
+
         if not template_db:
             template_db = conn.exec_driver_sql(
                 "select current_database()"
@@ -94,9 +85,7 @@ def _postgresql_set_default_schema_on_connection(
 @drop_all_schema_objects_pre_tables.for_db("postgresql")
 def drop_all_schema_objects_pre_tables(cfg, eng):
     with eng.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-        for xid in conn.exec_driver_sql(
-            "select gid from pg_prepared_xacts"
-        ).scalars():
+        for xid in conn.execute("select gid from pg_prepared_xacts").scalars():
             conn.execute("ROLLBACK PREPARED '%s'" % xid)
 
 
@@ -133,43 +122,3 @@ def prepare_for_drop_tables(config, connection):
             "idle in transaction: %s"
             % ("; ".join(row._mapping["query"] for row in rows))
         )
-
-
-@upsert.for_db("postgresql")
-def _upsert(
-    cfg, table, returning, *, set_lambda=None, sort_by_parameter_order=False
-):
-    from sqlalchemy.dialects.postgresql import insert
-
-    stmt = insert(table)
-
-    table_pk = inspect(table).selectable
-
-    if set_lambda:
-        stmt = stmt.on_conflict_do_update(
-            index_elements=table_pk.primary_key, set_=set_lambda(stmt.excluded)
-        )
-    else:
-        stmt = stmt.on_conflict_do_nothing()
-
-    stmt = stmt.returning(
-        *returning, sort_by_parameter_order=sort_by_parameter_order
-    )
-    return stmt
-
-
-_extensions = [
-    ("citext", (13,)),
-    ("hstore", (13,)),
-]
-
-
-@post_configure_engine.for_db("postgresql")
-def _create_citext_extension(url, engine, follower_ident):
-    with engine.connect() as conn:
-        for extension, min_version in _extensions:
-            if conn.dialect.server_version_info >= min_version:
-                conn.execute(
-                    text(f"CREATE EXTENSION IF NOT EXISTS {extension}")
-                )
-                conn.commit()

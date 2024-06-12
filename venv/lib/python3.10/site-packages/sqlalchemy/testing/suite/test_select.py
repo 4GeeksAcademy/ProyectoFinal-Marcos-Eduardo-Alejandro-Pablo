@@ -1,12 +1,3 @@
-# testing/suite/test_select.py
-# Copyright (C) 2005-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-# mypy: ignore-errors
-
-import collections.abc as collections_abc
 import itertools
 
 from .. import AssertsCompiledSQL
@@ -41,9 +32,11 @@ from ... import true
 from ... import tuple_
 from ... import TupleType
 from ... import union
+from ... import util
 from ... import values
 from ...exc import DatabaseError
 from ...exc import ProgrammingError
+from ...util import collections_abc
 
 
 class CollateTest(fixtures.TablesTest):
@@ -138,7 +131,7 @@ class OrderByLabelTest(fixtures.TablesTest):
         ly = (func.lower(table.c.q) + table.c.p).label("ly")
         self._assert_result(
             select(lx, ly).order_by(lx, ly.desc()),
-            [(3, "q1p3"), (5, "q2p2"), (7, "q3p1")],
+            [(3, util.u("q1p3")), (5, util.u("q2p2")), (7, util.u("q3p1"))],
         )
 
     def test_plain_desc(self):
@@ -215,8 +208,8 @@ class FetchLimitOffsetTest(fixtures.TablesTest):
             eq_(connection.execute(select, params).fetchall(), result)
 
     def _assert_result_str(self, select, result, params=()):
-        with config.db.connect() as conn:
-            eq_(conn.exec_driver_sql(select, params).fetchall(), result)
+        conn = config.db.connect(close_with_result=True)
+        eq_(conn.exec_driver_sql(select, params).fetchall(), result)
 
     def test_simple_limit(self, connection):
         table = self.tables.some_table
@@ -558,7 +551,7 @@ class FetchLimitOffsetTest(fixtures.TablesTest):
             .offset(2)
         ).fetchall()
         eq_(fa[0], (3, 3, 4))
-        eq_(set(fa), {(3, 3, 4), (4, 4, 5), (5, 4, 6)})
+        eq_(set(fa), set([(3, 3, 4), (4, 4, 5), (5, 4, 6)]))
 
     @testing.requires.fetch_ties
     @testing.requires.fetch_offset_with_options
@@ -629,106 +622,7 @@ class FetchLimitOffsetTest(fixtures.TablesTest):
             .offset(2)
         ).fetchall()
         eq_(fa[0], (3, 3, 4))
-        eq_(set(fa), {(3, 3, 4), (4, 4, 5), (5, 4, 6)})
-
-
-class SameNamedSchemaTableTest(fixtures.TablesTest):
-    """tests for #7471"""
-
-    __backend__ = True
-
-    __requires__ = ("schemas",)
-
-    @classmethod
-    def define_tables(cls, metadata):
-        Table(
-            "some_table",
-            metadata,
-            Column("id", Integer, primary_key=True),
-            schema=config.test_schema,
-        )
-        Table(
-            "some_table",
-            metadata,
-            Column("id", Integer, primary_key=True),
-            Column(
-                "some_table_id",
-                Integer,
-                # ForeignKey("%s.some_table.id" % config.test_schema),
-                nullable=False,
-            ),
-        )
-
-    @classmethod
-    def insert_data(cls, connection):
-        some_table, some_table_schema = cls.tables(
-            "some_table", "%s.some_table" % config.test_schema
-        )
-        connection.execute(some_table_schema.insert(), {"id": 1})
-        connection.execute(some_table.insert(), {"id": 1, "some_table_id": 1})
-
-    def test_simple_join_both_tables(self, connection):
-        some_table, some_table_schema = self.tables(
-            "some_table", "%s.some_table" % config.test_schema
-        )
-
-        eq_(
-            connection.execute(
-                select(some_table, some_table_schema).join_from(
-                    some_table,
-                    some_table_schema,
-                    some_table.c.some_table_id == some_table_schema.c.id,
-                )
-            ).first(),
-            (1, 1, 1),
-        )
-
-    def test_simple_join_whereclause_only(self, connection):
-        some_table, some_table_schema = self.tables(
-            "some_table", "%s.some_table" % config.test_schema
-        )
-
-        eq_(
-            connection.execute(
-                select(some_table)
-                .join_from(
-                    some_table,
-                    some_table_schema,
-                    some_table.c.some_table_id == some_table_schema.c.id,
-                )
-                .where(some_table.c.id == 1)
-            ).first(),
-            (1, 1),
-        )
-
-    def test_subquery(self, connection):
-        some_table, some_table_schema = self.tables(
-            "some_table", "%s.some_table" % config.test_schema
-        )
-
-        subq = (
-            select(some_table)
-            .join_from(
-                some_table,
-                some_table_schema,
-                some_table.c.some_table_id == some_table_schema.c.id,
-            )
-            .where(some_table.c.id == 1)
-            .subquery()
-        )
-
-        eq_(
-            connection.execute(
-                select(some_table, subq.c.id)
-                .join_from(
-                    some_table,
-                    subq,
-                    some_table.c.some_table_id == subq.c.id,
-                )
-                .where(some_table.c.id == 1)
-            ).first(),
-            (1, 1, 1),
-        )
+        eq_(set(fa), set([(3, 3, 4), (4, 4, 5), (5, 4, 6)]))
 
 
 class JoinTest(fixtures.TablesTest):
@@ -1735,6 +1629,7 @@ class IdentityColumnTest(fixtures.TablesTest):
         eq_(res, [(-5, "b"), (0, "a"), (42, "c")])
 
     def test_select_columns(self, connection):
+
         res = connection.execute(
             select(self.tables.tbl_a.c.id).order_by(self.tables.tbl_a.c.id)
         ).fetchall()

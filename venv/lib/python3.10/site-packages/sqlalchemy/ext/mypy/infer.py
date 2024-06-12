@@ -1,16 +1,15 @@
 # ext/mypy/infer.py
-# Copyright (C) 2021-2024 the SQLAlchemy authors and contributors
+# Copyright (C) 2021 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: https://www.opensource.org/licenses/mit-license.php
 
-from __future__ import annotations
-
 from typing import Optional
 from typing import Sequence
 
 from mypy.maptype import map_instance_to_supertype
+from mypy.messages import format_type
 from mypy.nodes import AssignmentStmt
 from mypy.nodes import CallExpr
 from mypy.nodes import Expression
@@ -44,13 +43,11 @@ def infer_type_from_right_hand_nameexpr(
     left_hand_explicit_type: Optional[ProperType],
     infer_from_right_side: RefExpr,
 ) -> Optional[ProperType]:
+
     type_id = names.type_id_for_callee(infer_from_right_side)
+
     if type_id is None:
         return None
-    elif type_id is names.MAPPED:
-        python_type_for_type = _infer_type_from_mapped(
-            api, stmt, node, left_hand_explicit_type, infer_from_right_side
-        )
     elif type_id is names.COLUMN:
         python_type_for_type = _infer_type_from_decl_column(
             api, stmt, node, left_hand_explicit_type
@@ -249,7 +246,7 @@ def _infer_type_from_decl_composite_property(
     node: Var,
     left_hand_explicit_type: Optional[ProperType],
 ) -> Optional[ProperType]:
-    """Infer the type of mapping from a Composite."""
+    """Infer the type of mapping from a CompositeProperty."""
 
     assert isinstance(stmt.rvalue, CallExpr)
     target_cls_arg = stmt.rvalue.args[0]
@@ -273,38 +270,6 @@ def _infer_type_from_decl_composite_property(
         )
     else:
         return python_type_for_type
-
-
-def _infer_type_from_mapped(
-    api: SemanticAnalyzerPluginInterface,
-    stmt: AssignmentStmt,
-    node: Var,
-    left_hand_explicit_type: Optional[ProperType],
-    infer_from_right_side: RefExpr,
-) -> Optional[ProperType]:
-    """Infer the type of mapping from a right side expression
-    that returns Mapped.
-
-
-    """
-    assert isinstance(stmt.rvalue, CallExpr)
-
-    # (Pdb) print(stmt.rvalue.callee)
-    # NameExpr(query_expression [sqlalchemy.orm._orm_constructors.query_expression])  # noqa: E501
-    # (Pdb) stmt.rvalue.callee.node
-    # <mypy.nodes.FuncDef object at 0x7f8d92fb5940>
-    # (Pdb) stmt.rvalue.callee.node.type
-    # def [_T] (default_expr: sqlalchemy.sql.elements.ColumnElement[_T`-1] =) -> sqlalchemy.orm.base.Mapped[_T`-1]  # noqa: E501
-    # sqlalchemy.orm.base.Mapped[_T`-1]
-    # the_mapped_type = stmt.rvalue.callee.node.type.ret_type
-
-    # TODO: look at generic ref and either use that,
-    # or reconcile w/ what's present, etc.
-    the_mapped_type = util.type_for_callee(infer_from_right_side)  # noqa
-
-    return infer_type_from_left_hand_type_only(
-        api, node, left_hand_explicit_type
-    )
 
 
 def _infer_type_from_decl_column_property(
@@ -441,6 +406,7 @@ def _infer_type_from_decl_column(
         )
 
         if left_hand_explicit_type is not None:
+
             return _infer_type_from_left_and_inferred_right(
                 api, node, left_hand_explicit_type, python_type_for_type
             )
@@ -488,8 +454,8 @@ def _infer_type_from_left_and_inferred_right(
             api,
             msg.format(
                 node.name,
-                util.format_type(orig_left_hand_type, api.options),
-                util.format_type(effective_type, api.options),
+                format_type(orig_left_hand_type),
+                format_type(effective_type),
             ),
             node,
         )

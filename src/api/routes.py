@@ -1,15 +1,50 @@
 from flask import Flask, request, jsonify, Blueprint, Response
-from api.models import db, Favorito,  User, Rating
+from api.models import db, Favorito,  User
 from api.utils import APIException
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_mail import Mail, Message
+from datetime import datetime, timedelta
+import jwt
+import uuid
+from flask_bcrypt import Bcrypt
 
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 
 CORS(api, origins="*")
+bcrypt = Bcrypt()
+# Configuración de Flask-Mail
+mail = Mail()
+def configure_mail(app):
+    app.config['MAIL_SERVER'] = 'smtp.office365.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USE_SSL'] = False
+    app.config['MAIL_USERNAME'] = 'cwspablo@outlook.com' #correo real y pass
+    app.config['MAIL_PASSWORD'] = '4geeks4geeks'
+    mail.init_app(app)
 
+def generate_reset_token(email):
+    # Payload con solo la información mínima necesaria
+    payload = {
+        'sub': email,  # Incluye solo el email como subject
+        'exp': datetime.utcnow() + timedelta(minutes=10)  # Reduce la duración a 10 minutos para mayor seguridad
+    }
+    # Utiliza una clave secreta más corta
+    secret_key = 'short_secret'
+    return jwt.encode(payload, secret_key, algorithm='HS256')
+
+# Decoding function remains the same
+def decode_reset_token(token):
+    try:
+        payload = jwt.decode(token, 'short_secret', algorithms=['HS256'])
+        return payload['sub']
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
 
 @api.route('/favoritos', methods=['GET'])
 def get_favoritos():
@@ -118,14 +153,16 @@ def get_user_favoritos(user_id):
 #     return '', 204
 
 @api.route('/users', methods=['POST'])
-@cross_origin(origin='*')
 def add_user():
     request_data = request.get_json()
     if not request_data or 'email' not in request_data or 'password' not in request_data:
         raise APIException('Invalid request body', status_code=400)
+    
+    user_uuid = str(uuid.uuid4())
+    password= request_data.get('password')
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(email=request_data['email'], password=hashed_password, user_uuid=user_uuid)
 
-    new_user = User(email=request_data['email'])
-    new_user.set_password(request_data['password'])
     db.session.add(new_user)
     db.session.commit()
 
@@ -187,69 +224,43 @@ def get_user(user_id):
         raise APIException('User not found', status_code=404)
     return jsonify(user.serialize()), 200
 
-
-#NUEVAS RUTAS RATING
-#@api.route('/ratings', methods=['GET'])
-@api.route('/api/ratings', methods=['GET'])
-def get_ratings():
-    ratings = Rating.query.all()
-    #return jsonify([rating.serialize() for rating in ratings]), 200
-    return jsonify([rating.to_dict() for rating in ratings])
-
-
-
-@api.route('/ratings/<int:rating_id>', methods=['GET'])
-def get_rating(rating_id):
-    rating = Rating.query.get(rating_id)
-    if not rating:
-        raise APIException('Rating not found', status_code=404)
-    return jsonify(rating.serialize()), 200
-
-@api.route('/ratings', methods=['POST'])
-def create_rating():
-    data = request.get_json()
-    if not data or not data.get('user_id') or not data.get('show_id') or not data.get('rating'):
-        raise APIException('User ID, Show ID, and Rating are required', status_code=400)
+# Ruta para solicitar la recuperación de contraseña
+@api.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    email = request.json.get('email')
+    user = User.query.filter_by(email=email).first()
     
-    new_rating = Rating(
-        user_id=data['user_id'],
-        show_id=data['show_id'],
-        rating=data['rating'],
-        comment=data.get('comment')
-    )
-    db.session.add(new_rating)
-    db.session.commit()
-    return jsonify(new_rating.serialize()), 201
-
-@api.route('/ratings/<int:rating_id>', methods=['PUT'])
-def update_rating(rating_id):
-    rating = Rating.query.get(rating_id)
-    if not rating:
-        raise APIException('Rating not found', status_code=404)
-
-    data = request.get_json()
-    if 'rating' in data:
-        rating.rating = data['rating']
-    if 'comment' in data:
-        rating.comment = data['comment']
+    if user:
+        user_uuid = user.user_uuid
+        reset_link = f"http://127.0.0.1:3000/resetpassword/{user_uuid}"
+        print(user_uuid, reset_link)
+        msg = Message("Password Reset Request",
+                      sender="cwspablo@outlook.com",  # Cambiar por tu correo
+                      recipients=[email])
+        msg.body = f"To reset your password, visit the following link: {reset_link}"
+        mail.send(msg)
+        
+        return jsonify({"msg": "Password reset link sent"}), 200
     
-    db.session.commit()
-    return jsonify(rating.serialize()), 200
+    return jsonify({"msg": "Email not found"}), 404
 
-@api.route('/ratings/<int:rating_id>', methods=['DELETE'])
-def delete_rating(rating_id):
-    rating = Rating.query.get(rating_id)
-    if not rating:
-        raise APIException('Rating not found', status_code=404)
-
-    db.session.delete(rating)
-    db.session.commit()
-    return '', 204
-
-@api.route('/users/<int:user_id>/ratings', methods=['GET'])
-def get_user_ratings(user_id):
-    user = User.query.get(user_id)
-    if not user:
-        raise APIException('User not found', status_code=404)
-    ratings = Rating.query.filter_by(user_id=user_id).all()
-    return jsonify([rating.serialize() for rating in ratings]), 200
+@api.route('/reset-password', methods=['PUT'])
+def recovery_password():
+    data = request.get_json(force=True)
+    try:
+        user_uuid = data.get('user_uuid') 
+        new_password = data.get('password')
+        user = User.query.filter_by(user_uuid=user_uuid).first()
+        hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        print (data, "dataa")
+        print(user)
+        print(user_uuid, "user_uuid")
+        print(new_password)
+        if user:
+            user.password = hashed_password
+            db.session.commit()
+            return jsonify({"message": "Usuario confirmado exitosamente"}), 200
+        else:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Error al confirmar el usuario: {str(e)}"}), 500

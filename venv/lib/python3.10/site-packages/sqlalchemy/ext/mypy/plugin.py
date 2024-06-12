@@ -1,5 +1,5 @@
 # ext/mypy/plugin.py
-# Copyright (C) 2021-2024 the SQLAlchemy authors and contributors
+# Copyright (C) 2021 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -9,8 +9,6 @@
 Mypy plugin for SQLAlchemy ORM.
 
 """
-from __future__ import annotations
-
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -42,19 +40,6 @@ from . import decl_class
 from . import names
 from . import util
 
-try:
-    __import__("sqlalchemy-stubs")
-except ImportError:
-    pass
-else:
-    raise ImportError(
-        "The SQLAlchemy mypy plugin in SQLAlchemy "
-        "2.0 does not work with sqlalchemy-stubs or "
-        "sqlalchemy2-stubs installed, as well as with any other third party "
-        "SQLAlchemy stubs.  Please uninstall all SQLAlchemy stubs "
-        "packages."
-    )
-
 
 class SQLAlchemyPlugin(Plugin):
     def get_dynamic_class_hook(
@@ -72,6 +57,7 @@ class SQLAlchemyPlugin(Plugin):
     def get_class_decorator_hook(
         self, fullname: str
     ) -> Optional[Callable[[ClassDefContext], None]]:
+
         sym = self.lookup_fully_qualified(fullname)
 
         if sym is not None and sym.node is not None:
@@ -126,8 +112,6 @@ class SQLAlchemyPlugin(Plugin):
         self, file: MypyFile
     ) -> List[Tuple[int, str, int]]:
         return [
-            #
-            (10, "sqlalchemy.orm", -1),
             (10, "sqlalchemy.orm.attributes", -1),
             (10, "sqlalchemy.orm.decl_api", -1),
         ]
@@ -200,13 +184,10 @@ def _fill_in_decorators(ctx: ClassDefContext) -> None:
         else:
             continue
 
-        if isinstance(target.expr, NameExpr):
-            sym = ctx.api.lookup_qualified(
-                target.expr.name, target, suppress_errors=True
-            )
-        else:
-            continue
-
+        assert isinstance(target.expr, NameExpr)
+        sym = ctx.api.lookup_qualified(
+            target.expr.name, target, suppress_errors=True
+        )
         if sym and sym.node:
             sym_type = get_proper_type(sym.type)
             if isinstance(sym_type, Instance):
@@ -289,7 +270,7 @@ def _add_globals(ctx: Union[ClassDefContext, DynamicClassDefContext]) -> None:
 
     """
 
-    util.add_global(ctx, "sqlalchemy.orm", "Mapped", "__sa_Mapped")
+    util.add_global(ctx, "sqlalchemy.orm.attributes", "Mapped", "__sa_Mapped")
 
 
 def _set_declarative_metaclass(

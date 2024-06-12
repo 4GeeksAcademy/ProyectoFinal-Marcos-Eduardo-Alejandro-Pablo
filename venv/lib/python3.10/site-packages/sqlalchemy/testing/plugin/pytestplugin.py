@@ -1,12 +1,9 @@
-# testing/plugin/pytestplugin.py
-# Copyright (C) 2005-2024 the SQLAlchemy authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of SQLAlchemy and is released under
-# the MIT License: https://www.opensource.org/licenses/mit-license.php
-# mypy: ignore-errors
-
-from __future__ import annotations
+try:
+    # installed by bootstrap.py
+    import sqla_plugin_base as plugin_base
+except ImportError:
+    # assume we're a package, use traditional import
+    from . import plugin_base
 
 import argparse
 import collections
@@ -17,18 +14,17 @@ import operator
 import os
 import re
 import sys
-from typing import TYPE_CHECKING
 import uuid
 
 import pytest
 
-try:
-    # installed by bootstrap.py
-    if not TYPE_CHECKING:
-        import sqla_plugin_base as plugin_base
-except ImportError:
-    # assume we're a package, use traditional import
-    from . import plugin_base
+
+py2k = sys.version_info < (3, 0)
+if py2k:
+    try:
+        import sqla_reinvent_fixtures as reinvent_fixtures_py2k
+    except ImportError:
+        from . import reinvent_fixtures_py2k
 
 
 def pytest_addoption(parser):
@@ -58,7 +54,7 @@ def pytest_addoption(parser):
                     required=False,
                     help=None,  # noqa
                 ):
-                    super().__init__(
+                    super(CallableAction, self).__init__(
                         option_strings=option_strings,
                         dest=dest,
                         nargs=0,
@@ -78,21 +74,10 @@ def pytest_addoption(parser):
         group.addoption(name, **kw)
 
     plugin_base.setup_options(make_option)
+    plugin_base.read_config()
 
 
-def pytest_configure(config: pytest.Config):
-    plugin_base.read_config(config.rootpath)
-    if plugin_base.exclude_tags or plugin_base.include_tags:
-        new_expr = " and ".join(
-            list(plugin_base.include_tags)
-            + [f"not {tag}" for tag in plugin_base.exclude_tags]
-        )
-
-        if config.option.markexpr:
-            config.option.markexpr += f" and {new_expr}"
-        else:
-            config.option.markexpr = new_expr
-
+def pytest_configure(config):
     if config.pluginmanager.hasplugin("xdist"):
         config.pluginmanager.register(XDistHooks())
 
@@ -132,42 +117,9 @@ def collect_types_fixture():
         collect_types.stop()
 
 
-def _log_sqlalchemy_info(session):
-    import sqlalchemy
-    from sqlalchemy import __version__
-    from sqlalchemy.util import has_compiled_ext
-    from sqlalchemy.util._has_cy import _CYEXTENSION_MSG
-
-    greet = "sqlalchemy installation"
-    site = "no user site" if sys.flags.no_user_site else "user site loaded"
-    msgs = [
-        f"SQLAlchemy {__version__} ({site})",
-        f"Path: {sqlalchemy.__file__}",
-    ]
-
-    if has_compiled_ext():
-        from sqlalchemy.cyextension import util
-
-        msgs.append(f"compiled extension enabled, e.g. {util.__file__} ")
-    else:
-        msgs.append(f"compiled extension not enabled; {_CYEXTENSION_MSG}")
-
-    pm = session.config.pluginmanager.get_plugin("terminalreporter")
-    if pm:
-        pm.write_sep("=", greet)
-        for m in msgs:
-            pm.write_line(m)
-    else:
-        # fancy pants reporter not found, fallback to plain print
-        print("=" * 25, greet, "=" * 25)
-        for m in msgs:
-            print(m)
-
-
 def pytest_sessionstart(session):
     from sqlalchemy.testing import asyncio
 
-    _log_sqlalchemy_info(session)
     asyncio._assume_async(plugin_base.post_begin)
 
 
@@ -180,12 +132,6 @@ def pytest_sessionfinish(session):
         from pyannotate_runtime import collect_types
 
         collect_types.dump_stats(session.config.option.dump_pyannotate)
-
-
-def pytest_unconfigure(config):
-    from sqlalchemy.testing import asyncio
-
-    asyncio._shutdown()
 
 
 def pytest_collection_finish(session):
@@ -208,7 +154,7 @@ def pytest_collection_finish(session):
         collect_types.init_types_collection(filter_filename=_filter)
 
 
-class XDistHooks:
+class XDistHooks(object):
     def pytest_configure_node(self, node):
         from sqlalchemy.testing import provision
         from sqlalchemy.testing import asyncio
@@ -234,6 +180,7 @@ class XDistHooks:
 
 
 def pytest_collection_modifyitems(session, config, items):
+
     # look for all those classes that specify __backend__ and
     # expand them out into per-database test cases.
 
@@ -257,53 +204,31 @@ def pytest_collection_modifyitems(session, config, items):
         and not item.getparent(pytest.Class).name.startswith("_")
     ]
 
-    test_classes = {item.getparent(pytest.Class) for item in items}
+    test_classes = set(item.getparent(pytest.Class) for item in items)
 
     def collect(element):
         for inst_or_fn in element.collect():
             if isinstance(inst_or_fn, pytest.Collector):
-                yield from collect(inst_or_fn)
+                # no yield from in 2.7
+                for el in collect(inst_or_fn):
+                    yield el
             else:
                 yield inst_or_fn
 
     def setup_test_classes():
         for test_class in test_classes:
-            # transfer legacy __backend__ and __sparse_backend__ symbols
-            # to be markers
-            add_markers = set()
-            if getattr(test_class.cls, "__backend__", False) or getattr(
-                test_class.cls, "__only_on__", False
-            ):
-                add_markers = {"backend"}
-            elif getattr(test_class.cls, "__sparse_backend__", False):
-                add_markers = {"sparse_backend"}
-            else:
-                add_markers = frozenset()
-
-            existing_markers = {
-                mark.name for mark in test_class.iter_markers()
-            }
-            add_markers = add_markers - existing_markers
-            all_markers = existing_markers.union(add_markers)
-
-            for marker in add_markers:
-                test_class.add_marker(marker)
-
             for sub_cls in plugin_base.generate_sub_tests(
-                test_class.cls, test_class.module, all_markers
+                test_class.cls, test_class.module
             ):
                 if sub_cls is not test_class.cls:
                     per_cls_dict = rebuilt_items[test_class.cls]
 
+                    # support pytest 5.4.0 and above pytest.Class.from_parent
+                    ctor = getattr(pytest.Class, "from_parent", pytest.Class)
                     module = test_class.getparent(pytest.Module)
-
-                    new_cls = pytest.Class.from_parent(
-                        name=sub_cls.__name__, parent=module
-                    )
-                    for marker in add_markers:
-                        new_cls.add_marker(marker)
-
-                    for fn in collect(new_cls):
+                    for fn in collect(
+                        ctor(name=sub_cls.__name__, parent=module)
+                    ):
                         per_cls_dict[fn.name].append(fn)
 
     # class requirements will sometimes need to access the DB to check
@@ -317,6 +242,10 @@ def pytest_collection_modifyitems(session, config, items):
             newitems.extend(rebuilt_items[cls_][item.name])
         else:
             newitems.append(item)
+
+    if py2k:
+        for item in newitems:
+            reinvent_fixtures_py2k.scan_for_fixtures_to_use_for_class(item)
 
     # seems like the functions attached to a test class aren't sorted already?
     # is that true and why's that? (when using unittest, they're sorted)
@@ -337,10 +266,9 @@ def pytest_pycollect_makeitem(collector, name, obj):
         if config.any_async:
             obj = _apply_maybe_async(obj)
 
+        ctor = getattr(pytest.Class, "from_parent", pytest.Class)
         return [
-            pytest.Class.from_parent(
-                name=parametrize_cls.__name__, parent=collector
-            )
+            ctor(name=parametrize_cls.__name__, parent=collector)
             for parametrize_cls in _parametrize_cls(collector.module, obj)
         ]
     elif (
@@ -417,7 +345,9 @@ def _parametrize_cls(module, cls):
             for arg, val in zip(argname_split, param.values):
                 cls_variables[arg] = val
         parametrized_name = "_".join(
-            re.sub(r"\W", "", token)
+            # token is a string, but in py2k pytest is giving us a unicode,
+            # so call str() on it.
+            str(re.sub(r"\W", "", token))
             for param in full_param_set
             for token in param.id.split("-")
         )
@@ -454,8 +384,8 @@ def pytest_runtest_setup(item):
 def pytest_runtest_teardown(item, nextitem):
     # runs inside of pytest function fixture scope
     # after test function runs
-
     from sqlalchemy.testing import asyncio
+    from sqlalchemy.util import string_types
 
     asyncio._maybe_async(plugin_base.after_test, item)
 
@@ -487,7 +417,7 @@ def pytest_runtest_teardown(item, nextitem):
                         "__Original test failure__:\n"
                         + _current_report.longreprtext,
                     )
-                elif e.args[-1] and isinstance(e.args[-1], str):
+                elif e.args[-1] and isinstance(e.args[-1], string_types):
                     args = list(e.args)
                     args[-1] += (
                         "\n__Original test failure__:\n"
@@ -537,7 +467,13 @@ def setup_class_methods(request):
     if hasattr(cls, "setup_test_class"):
         asyncio._maybe_async(cls.setup_test_class)
 
+    if py2k:
+        reinvent_fixtures_py2k.run_class_fixture_setup(request)
+
     yield
+
+    if py2k:
+        reinvent_fixtures_py2k.run_class_fixture_teardown(request)
 
     if hasattr(cls, "teardown_test_class"):
         asyncio._maybe_async(cls.teardown_test_class)
@@ -558,7 +494,9 @@ def setup_test_methods(request):
     # 1. function level "autouse" fixtures under py3k (examples: TablesTest
     #    define tables / data, MappedTest define tables / mappers / data)
 
-    # 2. was for p2k. no longer applies
+    # 2. run homegrown function level "autouse" fixtures under py2k
+    if py2k:
+        reinvent_fixtures_py2k.run_fn_fixture_setup(request)
 
     # 3. run outer xdist-style setup
     if hasattr(self, "setup_test"):
@@ -601,11 +539,20 @@ def setup_test_methods(request):
     if hasattr(self, "teardown_test"):
         asyncio._maybe_async(self.teardown_test)
 
-    # 11. was for p2k. no longer applies
+    # 11. run homegrown function-level "autouse" fixtures under py2k
+    if py2k:
+        reinvent_fixtures_py2k.run_fn_fixture_teardown(request)
 
     # 12. function level "autouse" fixtures under py3k (examples: TablesTest /
     #    MappedTest delete table data, possibly drop tables and clear mappers
     #    depending on the flags defined by the test class)
+
+
+def getargspec(fn):
+    if sys.version_info.major == 3:
+        return inspect.getfullargspec(fn)
+    else:
+        return inspect.getargspec(fn)
 
 
 def _pytest_fn_decorator(target):
@@ -615,14 +562,11 @@ def _pytest_fn_decorator(target):
     from sqlalchemy.util.compat import inspect_getfullargspec
 
     def _exec_code_in_env(code, env, fn_name):
-        # note this is affected by "from __future__ import annotations" at
-        # the top; exec'ed code will use non-evaluated annotations
-        # which allows us to be more flexible with code rendering
-        # in format_argpsec_plus()
         exec(code, env)
         return env[fn_name]
 
     def decorate(fn, add_positional_parameters=()):
+
         spec = inspect_getfullargspec(fn)
         if add_positional_parameters:
             spec.args.extend(add_positional_parameters)
@@ -633,7 +577,7 @@ def _pytest_fn_decorator(target):
         metadata.update(format_argspec_plus(spec, grouped=False))
         code = (
             """\
-def %(name)s%(grouped_args)s:
+def %(name)s(%(args)s):
     return %(__target_fn)s(%(__orig_fn)s, %(apply_kw)s)
 """
             % metadata
@@ -662,10 +606,6 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
     def skip_test_exception(self, *arg, **kw):
         return pytest.skip.Exception(*arg, **kw)
 
-    @property
-    def add_to_marker(self):
-        return pytest.mark
-
     def mark_base_test_class(self):
         return pytest.mark.usefixtures(
             "setup_class_methods", "setup_test_methods"
@@ -675,9 +615,9 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
         "i": lambda obj: obj,
         "r": repr,
         "s": str,
-        "n": lambda obj: (
-            obj.__name__ if hasattr(obj, "__name__") else type(obj).__name__
-        ),
+        "n": lambda obj: obj.__name__
+        if hasattr(obj, "__name__")
+        else type(obj).__name__,
     }
 
     def combinations(self, *arg_sets, **kw):
@@ -691,8 +631,12 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
         """
         from sqlalchemy.testing import exclusions
 
-        if len(arg_sets) == 1 and hasattr(arg_sets[0], "__next__"):
-            arg_sets = list(arg_sets[0])
+        if sys.version_info.major == 3:
+            if len(arg_sets) == 1 and hasattr(arg_sets[0], "__next__"):
+                arg_sets = list(arg_sets[0])
+        else:
+            if len(arg_sets) == 1 and hasattr(arg_sets[0], "next"):
+                arg_sets = list(arg_sets[0])
 
         argnames = kw.pop("argnames", None)
 
@@ -723,7 +667,7 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
                     idx
                     for idx, char in enumerate(id_)
                     if char in ("n", "r", "s", "a")
-                ],
+                ]
             )
             fns = [
                 (operator.itemgetter(idx), _combination_id_fns[char])
@@ -753,6 +697,7 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
                 )
 
         else:
+
             for arg in arg_sets:
                 if not isinstance(arg, tuple):
                     arg = (arg,)
@@ -785,18 +730,13 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
                 fn._sa_parametrize.append((argnames, pytest_params))
                 return fn
             else:
-                _fn_argnames = inspect.getfullargspec(fn).args[1:]
                 if argnames is None:
-                    _argnames = _fn_argnames
+                    _argnames = getargspec(fn).args[1:]
                 else:
                     _argnames = re.split(r", *", argnames)
 
                 if has_exclusions:
-                    existing_exl = sum(
-                        1 for n in _fn_argnames if n.startswith("_exclusions")
-                    )
-                    current_exclusion_name = f"_exclusions_{existing_exl}"
-                    _argnames += [current_exclusion_name]
+                    _argnames += ["_exclusions"]
 
                     @_pytest_fn_decorator
                     def check_exclusions(fn, *args, **kw):
@@ -804,10 +744,13 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
                         if _exclusions:
                             exlu = exclusions.compound().add(*_exclusions)
                             fn = exlu(fn)
-                        return fn(*args[:-1], **kw)
+                        return fn(*args[0:-1], **kw)
+
+                    def process_metadata(spec):
+                        spec.args.append("_exclusions")
 
                     fn = check_exclusions(
-                        fn, add_positional_parameters=(current_exclusion_name,)
+                        fn, add_positional_parameters=("_exclusions",)
                     )
 
                 return pytest.mark.parametrize(_argnames, pytest_params)(fn)
@@ -845,8 +788,17 @@ class PytestFixtureFunctions(plugin_base.FixtureFunctions):
                 fn = asyncio._maybe_async_wrapper(fn)
             # other wrappers may be added here
 
-            # now apply FixtureFunctionMarker
-            fn = fixture(fn)
+            if py2k and "autouse" in kw:
+                # py2k workaround for too-slow collection of autouse fixtures
+                # in pytest 4.6.11.  See notes in reinvent_fixtures_py2k for
+                # rationale.
+
+                # comment this condition out in order to disable the
+                # py2k workaround entirely.
+                reinvent_fixtures_py2k.add_fixture(fn, fixture)
+            else:
+                # now apply FixtureFunctionMarker
+                fn = fixture(fn)
 
             return fn
 

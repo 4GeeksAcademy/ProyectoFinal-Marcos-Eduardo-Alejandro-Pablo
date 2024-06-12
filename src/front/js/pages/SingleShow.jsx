@@ -18,7 +18,7 @@ const SingleShow = () => {
     }, [store.currentUser]);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchData = async () => { 
             try {
                 const response = await fetch(`https://api.tvmaze.com/shows/${id}`);
                 const data = await response.json();
@@ -51,8 +51,6 @@ const SingleShow = () => {
                     <p>Ended: {showData.ended}</p>
                     <p>Rating: {showData.rating?.average}</p>
                     <p>Network: {showData.network?.name}</p>
-
-
                     <div>
                         <input
                             type="text"
@@ -78,8 +76,6 @@ const SingleShow = () => {
                             </div>
                         ))}
                     </div>
-
-
                     <button onClick={() => { actions.setFavoritas(showData) }} className="btn btn-primary" >Añadir a fav</button>
                 </div>
             </div>

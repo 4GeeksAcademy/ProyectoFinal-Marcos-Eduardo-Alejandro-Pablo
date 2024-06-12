@@ -5,6 +5,7 @@ const getState = ({ getStore, getActions, setStore }) => {
             favourites: [],
             message: null,
             datos: [],
+            comentarios: [],
             demo: [
                 {
                     title: "FIRST",

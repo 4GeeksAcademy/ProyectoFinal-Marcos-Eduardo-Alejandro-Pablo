@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, Blueprint, Response
-from api.models import db, Favorito,  User
+from api.models import db, Favorito,  User, Rating
 from api.utils import APIException
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -186,3 +186,70 @@ def get_user(user_id):
     if not user:
         raise APIException('User not found', status_code=404)
     return jsonify(user.serialize()), 200
+
+
+#NUEVAS RUTAS RATING
+#@api.route('/ratings', methods=['GET'])
+@api.route('/api/ratings', methods=['GET'])
+def get_ratings():
+    ratings = Rating.query.all()
+    #return jsonify([rating.serialize() for rating in ratings]), 200
+    return jsonify([rating.to_dict() for rating in ratings])
+
+
+
+@api.route('/ratings/<int:rating_id>', methods=['GET'])
+def get_rating(rating_id):
+    rating = Rating.query.get(rating_id)
+    if not rating:
+        raise APIException('Rating not found', status_code=404)
+    return jsonify(rating.serialize()), 200
+
+@api.route('/ratings', methods=['POST'])
+def create_rating():
+    data = request.get_json()
+    if not data or not data.get('user_id') or not data.get('show_id') or not data.get('rating'):
+        raise APIException('User ID, Show ID, and Rating are required', status_code=400)
+    
+    new_rating = Rating(
+        user_id=data['user_id'],
+        show_id=data['show_id'],
+        rating=data['rating'],
+        comment=data.get('comment')
+    )
+    db.session.add(new_rating)
+    db.session.commit()
+    return jsonify(new_rating.serialize()), 201
+
+@api.route('/ratings/<int:rating_id>', methods=['PUT'])
+def update_rating(rating_id):
+    rating = Rating.query.get(rating_id)
+    if not rating:
+        raise APIException('Rating not found', status_code=404)
+
+    data = request.get_json()
+    if 'rating' in data:
+        rating.rating = data['rating']
+    if 'comment' in data:
+        rating.comment = data['comment']
+    
+    db.session.commit()
+    return jsonify(rating.serialize()), 200
+
+@api.route('/ratings/<int:rating_id>', methods=['DELETE'])
+def delete_rating(rating_id):
+    rating = Rating.query.get(rating_id)
+    if not rating:
+        raise APIException('Rating not found', status_code=404)
+
+    db.session.delete(rating)
+    db.session.commit()
+    return '', 204
+
+@api.route('/users/<int:user_id>/ratings', methods=['GET'])
+def get_user_ratings(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+    ratings = Rating.query.filter_by(user_id=user_id).all()
+    return jsonify([rating.serialize() for rating in ratings]), 200

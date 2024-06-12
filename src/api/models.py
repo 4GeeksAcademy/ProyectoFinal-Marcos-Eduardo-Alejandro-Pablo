@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from models import Rating
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
@@ -44,6 +45,24 @@ class Favorito(db.Model):
             "show_id": self.show_id,
         }
     
+# NUEVA TABLA RATING
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    show_id = db.Column(db.Integer, db.ForeignKey('shows.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.String(500), nullable=True)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'show_id': self.show_id,
+            'rating': self.rating,
+            'comment': self.comment
+        }
 # class Blacklist(db.Model):
 #     id = db.Column(db.Integer, primary_key=True)
 #     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

@@ -14,7 +14,17 @@ const FavoritosUsuario = () => {
     useEffect(() => {
         fetch(process.env.BACKEND_URL + `/api/users/${userId}/favoritos`)
             .then(response => response.json())
-            .then(data => setFavorites(data))
+            .then(favorites => {
+
+                const fetchPromises = favorites.map(favorite =>
+                    fetch(`https://api.tvmaze.com/shows/${favorite.show_id}`)
+                        .then(response => response.json())
+                );
+
+
+                return Promise.all(fetchPromises);
+            })
+            .then(shows => setFavorites(shows))
             .catch(error => console.error(error));
     }, [userId]);
 

@@ -33,7 +33,7 @@ const FavoritosUsuario = () => {
         document.execCommand('copy');
     };
 
-    if (store.currentUser === null) {
+    if (!localStorage.getItem('jwt-token')) {
         return (
             <div className="container text-center mt-5">
                 <h1 className="text-danger">Necesitas estar logueado para ver los favoritos de otras personas y compartir los tuyos.</h1>

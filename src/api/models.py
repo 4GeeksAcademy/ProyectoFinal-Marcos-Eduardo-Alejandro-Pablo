@@ -9,6 +9,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)  # Increased length
     is_active = db.Column(db.Boolean(), nullable=False, default=True)
+    user_uuid= db.Column(db.String(250), nullable=True)
 
     # favoritos = db.relationship('Favorito', backref='user', lazy=True)
     favoritos = db.relationship('Favorito', backref='user', lazy=True, cascade="all, delete-orphan")
@@ -23,7 +24,7 @@ class User(db.Model):
             "email": self.email,
             "password": self.password,
             "is_active": self.is_active,
-            
+            "user_uuid": self.user_uuid    
         }
 
     def set_password(self, password):

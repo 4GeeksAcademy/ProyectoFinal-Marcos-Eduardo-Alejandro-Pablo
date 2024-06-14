@@ -51,7 +51,8 @@ const PaginaLogin = () => {
                                     <button type="submit" className="btn btn-primary btn-block">Iniciar sesión</button>
                                 </div>
                             </form>
-                            <Link to="/registro/">¿No estás registrado? Haz click aquí!</Link>
+                            <p><Link to="/registro/">¿No estás registrado? Haz click aquí!</Link></p>
+                           <p><Link to="/forgotpassword/">Recuperar contraseña</Link></p>
                         </div>
                     </div>
                 </div>

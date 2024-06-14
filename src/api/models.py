@@ -9,7 +9,6 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)  # Increased length
     is_active = db.Column(db.Boolean(), nullable=False, default=True)
-    user_uuid= db.Column(db.String(250), nullable=True)
 
     # favoritos = db.relationship('Favorito', backref='user', lazy=True)
     favoritos = db.relationship('Favorito', backref='user', lazy=True, cascade="all, delete-orphan")
@@ -24,7 +23,7 @@ class User(db.Model):
             "email": self.email,
             "password": self.password,
             "is_active": self.is_active,
-            "user_uuid": self.user_uuid    
+            
         }
 
     def set_password(self, password):
@@ -56,3 +55,22 @@ class Favorito(db.Model):
 #             "user_id": self.user_id,
 #             "show_id": self.show_id,
 #         }
+
+
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    show_id = db.Column(db.Integer, nullable=False)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.String(500), nullable=True)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'show_id': self.show_id,
+            'rating': self.rating,
+            'comment': self.comment
+        }

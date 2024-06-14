@@ -53,6 +53,8 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
             registro: async ({ email, password }) => {
                 try {
+                    console.log("método registro");
+                    //la llamada está fallando
                     const response = await fetch(process.env.BACKEND_URL + '/api/users', {
                         method: 'POST',
                         headers: {
@@ -62,12 +64,15 @@ const getState = ({ getStore, getActions, setStore }) => {
                         },
                         body: JSON.stringify({ 'email': email, 'password': password })
                     });
+                    console.log("después de la llamada")
                     if (!response.ok) {
                         console.error('Error al enviar datos');
                         throw new Error('Error al enviar datos');
                     }
                     const data = await response.json();
+
                     setStore({ datos: data.result });
+
                     return data;
                 } catch (error) {
                     console.error('Error:', error);
@@ -76,7 +81,8 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
             login: async ({ email, password }) => {
                 try {
-                    const response = await fetch(process.env.BACKEND_URL + '/api/login', {
+                    const response = await fetch(process.env.BACKEND_URL + 'api/login', {
+
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -88,6 +94,7 @@ const getState = ({ getStore, getActions, setStore }) => {
                         console.error('Error al enviar datos');
                         throw new Error('Error al enviar datos');
                     }
+
                     const data = await response.json();
                     localStorage.setItem("jwt-token", data.token);
                     setStore({ currentUser: data });
@@ -98,16 +105,19 @@ const getState = ({ getStore, getActions, setStore }) => {
                     return false;
                 }
             },
+
             getToken: () => {
                 const token = localStorage.getItem('jwt-token');
                 return !!token;
             },
+
             logout: () => {
                 localStorage.removeItem('jwt-token');
                 setStore({ currentUser: null });
             },
             getCurrentUser: async () => {
                 const userId = getStore().currentUser.user_id;
+
                 try {
                     const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId, {
                         method: 'GET',
@@ -117,6 +127,7 @@ const getState = ({ getStore, getActions, setStore }) => {
                             'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
                         }
                     });
+
                     if (!response.ok) {
                         console.error("Error consiguiendo al usuario");
                     }
@@ -137,16 +148,20 @@ const getState = ({ getStore, getActions, setStore }) => {
                         },
                         body: JSON.stringify({ 'user_id': userId, 'show_id': showId }),
                     });
+
                     if (!response.ok) {
                         throw new Error('Error adding favourite');
                     }
                     const data = await response.json();
+
                     const newFavourite = { id: data.id, user_id: userId, show_id: showId };
+
                     const store = getStore();
                     setStore({
                         ...store,
                         favourites: [...store.favourites, newFavourite]
                     });
+
                 } catch (error) {
                     console.error('Error:', error);
                 }
@@ -176,6 +191,7 @@ const getState = ({ getStore, getActions, setStore }) => {
                 let data;
                 try {
                     data = await response.json();
+
                 } catch (error) {
                     console.error(error);
                 }
@@ -185,13 +201,5 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
     };
 };
+
 export default getState;
-
-
-
-
-
-
-
-
-

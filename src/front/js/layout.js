@@ -12,6 +12,7 @@ import PerfilUsuario from "./pages/PerfilUsuario.jsx";
 import PaginaLogin from "./pages/PaginaLogin.jsx";
 import PaginaRegistro from "./pages/PaginaRegistro.jsx";
 import MisFavoritos from "./pages/MisFavoritos.jsx";
+import FavoritosUsuario from "./pages/FavoritosUsuario.jsx";
 
 import injectContext from "./store/appContext";
 
@@ -41,6 +42,7 @@ const Layout = () => {
                                 <Route element={<Single />} path="/single/:theid" />
                                 <Route element={<SingleShow />} path="/show/:id" />
                                 <Route element={<PerfilUsuario />} path="/perfil/" />
+                                <Route element={<FavoritosUsuario />} path="/favoritos/:userId" />
                                 <Route element={<MisFavoritos />} path="/misfavoritos/" />
                                 <Route element={<PaginaLogin />} path="/login/" />
                                 <Route element={<PaginaRegistro />} path="/registro/" />

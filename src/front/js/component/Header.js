@@ -22,6 +22,11 @@ export const Header = () => {
 						</li>
 						{store.currentUser !== null ? (
 							<li className="nav-item">
+								<Link to={`/favoritos/${store.currentUser.id}`} className="nav-link">Compartir mis Favoritos</Link>
+							</li>
+						) : ""}
+						{store.currentUser !== null ? (
+							<li className="nav-item">
 								<Link to="/misfavoritos/" className="nav-link">Mis Favoritos</Link>
 							</li>
 						) : ""}

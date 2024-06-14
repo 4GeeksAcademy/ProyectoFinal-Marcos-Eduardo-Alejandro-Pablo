@@ -11,9 +11,9 @@ const PerfilUsuario = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-  
+
         actions.getCurrentUser();
-    
+
     }, [store.currentUser]);
 
     useEffect(() => {
@@ -22,7 +22,7 @@ const PerfilUsuario = () => {
                 fetch(`https://api.tvmaze.com/shows/${favourite.show_id}`)
                     .then(response => response.json())
             );
-    
+
             Promise.all(promises)
                 .then(favouritesData => setFavorites(favouritesData))
                 .catch(error => console.error(error));
@@ -37,19 +37,19 @@ const PerfilUsuario = () => {
             </div>
         );
     }
-   
+
     return (
         <div className="container mt-5">
 
             <div className="row">
                 <h3>Favoritos:</h3>
                 <div className="col d-flex gap-5 flex-wrap">
-                {favorites && favorites.map((favorite, index) => (
-    <CardFavo cardInfo={favorite} key={index} />
-))}
+                    {favorites && favorites.map((favorite, index) => (
+                        <CardFavo cardInfo={favorite} key={index} />
+                    ))}
 
 
-            </div>
+                </div>
             </div>
         </div>
     );

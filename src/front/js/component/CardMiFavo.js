@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Context } from "../store/appContext";
 
 
-export const CardFavo = ({ cardInfo }) => {
+export const CardMiFavo = ({ cardInfo }) => {
     const { id, image, name, rating, summary, favourites } = cardInfo;
     const { store, actions } = useContext(Context);
 
@@ -38,8 +38,8 @@ export const CardFavo = ({ cardInfo }) => {
                     style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
                 />
             </Link>
-            <h4 className="position-absolute top-0 start-0 p-2" onClick={handleToggleFavourite}><i className={isFavourite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i></h4>
-            <h6 className="position-absolute bottom-0 end-0 p-2">{name} <i className="fa-solid fa-star"></i>{rating.average ? rating.average : "N/A"}</h6>
+            {/* <h4 className="position-absolute top-0 start-0 p-2" onClick={handleToggleFavourite}><i className={isFavourite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i></h4> */}
+            {/* <h6 className="position-absolute bottom-0 end-0 p-2">{name} <i className="fa-solid fa-star"></i>{rating.average ? rating.average : "N/A"}</h6> */}
             <div className="description">{summary ? summary.replace(/<[^>]+>/g, '') : "Sin descripción."}</div>
         </div>
     );

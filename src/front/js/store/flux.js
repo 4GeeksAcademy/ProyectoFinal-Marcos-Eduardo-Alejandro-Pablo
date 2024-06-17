@@ -75,7 +75,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			login: async ({ email, password }) => {
 				try {
-					const response = await fetch(process.env.BACKEND_URL + 'api/login', {
+					const response = await fetch('https://reimagined-space-spork-r46q4596pgv3p4w4-3001.app.github.dev' + '/api/login', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',

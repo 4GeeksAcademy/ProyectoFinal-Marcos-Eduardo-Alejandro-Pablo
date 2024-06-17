@@ -22,16 +22,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 			exampleFunction: () => {
 				getActions().changeColor(0, "green");
 			},
-			// getMessage: async () => {
-			//  try {
-			//      const resp = await fetch(process.env.BACKEND_URL + "/api/hello");
-			//      const data = await resp.json();
-			//      setStore({ message: data.message });
-			//      return data;
-			//  } catch (error) {
-			//      console.log("Error loading message from backend", error);
-			//  }
-			// },
 			getMessage: async () => {
 				try {
 					// const resp = await fetch(process.env.BACKEND_URL + "/api/hello");
@@ -75,7 +65,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			login: async ({ email, password }) => {
 				try {
-					const response = await fetch('https://reimagined-space-spork-r46q4596pgv3p4w4-3001.app.github.dev' + '/api/login', {
+					const response = await fetch(process.env.BACKEND_URL + '/api/login', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
@@ -106,7 +96,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 						body: JSON.stringify({ email })
 					});
-
 					if (!response.ok) {
 						console.error('Error al enviar datos');
 						throw new Error('Error al enviar datos');
@@ -119,7 +108,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			resetPassword: async (password, user_uuid) => {
 				try {
-					const response = await fetch(process.env.BACKEND_URL + 'api/reset-password/', {
+					const response = await fetch(process.env.BACKEND_URL + '/api/reset-password/', {
 						method: 'PUT',
 						headers: {
 							'Content-Type': 'application/json',
@@ -158,6 +147,29 @@ const getState = ({ getStore, getActions, setStore }) => {
 					});
 					if (!response.ok) {
 						console.error("Error consiguiendo al usuario");
+					}
+					const data = await response.json();
+					setStore({ currentUser: data });
+					return data;
+				} catch (error) {
+					console.error('Error:', error);
+					throw error;
+				}
+			},
+			updateUserName: async (newUserName) => {
+				const store = getStore();
+				const userId = store.currentUser.user_id;
+				try {
+					const response = await fetch(`${process.env.BACKEND_URL}/api/users/${userId}`, {
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
+						},
+						body: JSON.stringify({ user_name: newUserName })
+					});
+					if (!response.ok) {
+						throw new Error('Error al actualizar el nombre de usuario');
 					}
 					const data = await response.json();
 					setStore({ currentUser: data });

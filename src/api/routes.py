@@ -197,6 +197,20 @@ def create_token():
     access_token = create_access_token(identity=user.id)
     return jsonify({"token": access_token, "user_id": user.id})
 
+@api.route('/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('Usuario no encontrado', status_code=404)
+    
+    data = request.get_json()
+
+    if 'user_name' in data and data['user_name'] is not None:
+        user.user_name = data['user_name']
+
+    db.session.commit()
+    return jsonify(user.serialize()), 200
+
 @api.route('/protected', methods=['GET'])
 @cross_origin(origin='*')
 @jwt_required()

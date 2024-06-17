@@ -7,7 +7,8 @@ bcrypt = Bcrypt()
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)  # Increased length
+    password = db.Column(db.String(128), nullable=False)
+    user_name = db.Column(db.String(128), nullable=True)  # Increased length
     is_active = db.Column(db.Boolean(), nullable=False, default=True)
     user_uuid= db.Column(db.String(250), nullable=True)
 
@@ -22,6 +23,7 @@ class User(db.Model):
         return {
             "id": self.id,
             "email": self.email,
+            "user_name": self.user_name,
             "password": self.password,
             "is_active": self.is_active,
             "user_uuid": self.user_uuid    

@@ -18,7 +18,7 @@ export const Card = ({ cardInfo }) => {
         setIsFavourite(store.favourites.some(fav => fav.show_id === show.id && fav.user_id === store.currentUser.id));
     }, [store.favourites]);
 
-    const handleToggleFavourite = (event) => {
+    const handleToggleFavourite = async () => {
         if (!store.currentUser) {
             setShowModal(true);
 

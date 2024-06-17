@@ -1,24 +1,33 @@
 import React, { useState } from 'react';
 
-const StarRating = ({ rating, onRate }) => {
-    const [hover, setHover] = useState(0);
+const StarRating = ({ rating, onRatingChange }) => {
+    const [hoverRating, setHoverRating] = useState(0);
+
+    const handleMouseOver = (index) => {
+        setHoverRating(index);
+    };
+
+    const handleMouseLeave = () => {
+        setHoverRating(0);
+    };
+
+    const handleClick = (index) => {
+        onRatingChange(index);
+    };
+
 
     return (
         <div className="star-rating">
-            {[...Array(5)].map((star, index) => {
-                index += 1;
-                return (
-                    <span
-                        key={index}
-                        className={index <= (hover || rating) ? "on" : "off"}
-                        onClick={() => onRate(index)}
-                        onMouseEnter={() => setHover(index)}
-                        onMouseLeave={() => setHover(rating)}
-                    >
-                        <i className="fa fa-star"></i>
-                    </span>
-                );
-            })}
+            {[1, 2, 3, 4, 5].map((index) => (
+                <span
+                    key={index}
+                    className={`star ${index <= (hoverRating || rating) ? "filled" : ""}`}
+                    onMouseOver={() => handleMouseOver(index)}
+                    onMouseLeave={handleMouseLeave}
+                    onClick={() => handleClick(index)}
+                >
+                </span>
+            ))}
         </div>
     );
 };

@@ -26,7 +26,7 @@ const Comment = ({ text, userId, onDelete }) => {
                 })}
             </div>
             <i
-                className="fas fa-trash-alt float-end"
+                className="fas fa-trash-alt"
                 onClick={onDelete}
             ></i>
         </div>

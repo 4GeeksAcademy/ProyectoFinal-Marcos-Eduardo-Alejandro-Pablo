@@ -3,7 +3,7 @@
     padding: 15px;
     margin: 10px 0;
     border-radius: 5px;
-    background-color: #f9f9f9;
+    background-color: #191919;
     position: relative;
 }
 
@@ -14,15 +14,15 @@
 
 .comment-box .stars .fa-star {
     cursor: pointer;
-    color: #ddd;
+    color: white;
 }
 
 .comment-box .stars .on {
-    color: #ffc107;
+    color: white;
 }
 
 .comment-box .stars .off {
-    color: #ddd;
+    color: white;
 }
 
 .comment-box .fas.fa-trash-alt {

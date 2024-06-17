@@ -1,7 +1,7 @@
 const getState = ({ getStore, getActions, setStore }) => {
     return {
         store: {
-            currentUser: null,
+            currentUser: [],
             favourites: [],
             message: null,
             datos: [],
@@ -96,8 +96,10 @@ const getState = ({ getStore, getActions, setStore }) => {
                     }
 
                     const data = await response.json();
+                    console.log("Login response data: ", data);
                     localStorage.setItem("jwt-token", data.token);
-                    setStore({ currentUser: data });
+                    setStore({ currentUser: data.user });
+                    console.log(store);
                     await getActions().getCurrentUserFavourites(data.user_id);
                     return true;
                 } catch (error) {
@@ -117,19 +119,23 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
             getCurrentUser: async () => {
                 const userId = getStore().currentUser.user_id;
+                console.log('getCurrentUser userId:'+userId);
+                const token = localStorage.getItem("jwt-token");
+                if (!token) return;
 
                 try {
-                    const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId, {
+                    const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId , {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'accept': 'application/json',
+                            /*'accept': 'application/json',*/
                             'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
                         }
                     });
 
                     if (!response.ok) {
                         console.error("Error consiguiendo al usuario");
+                        throw new Error("Error consiguiendo al usuario");
                     }
                     const data = await response.json();
                     setStore({ currentUser: data });
@@ -141,19 +147,24 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
             addFavourite: async (userId, showId) => {
                 try {
+                    console.log('user:'+userId+' show:'+showId);
                     const response = await fetch(process.env.BACKEND_URL + '/api/favoritos', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`,
+
                         },
                         body: JSON.stringify({ 'user_id': userId, 'show_id': showId }),
                     });
 
                     if (!response.ok) {
+                        const errorResponse = await response.json();
+                        console.error('Error response:', errorResponse);
                         throw new Error('Error adding favourite');
                     }
                     const data = await response.json();
-
+                    console.log('Favourite added:', data);
                     const newFavourite = { id: data.id, user_id: userId, show_id: showId };
 
                     const store = getStore();
@@ -184,7 +195,19 @@ const getState = ({ getStore, getActions, setStore }) => {
                 }
             },
             getCurrentUserFavourites: async userId => {
-                const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId + '/favoritos');
+                console.log('getCurrentUserFavourites usuerId:'+userId);
+                //const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId + '/favoritos');
+
+                const response = await fetch(process.env.BACKEND_URL + '/api/users/' + userId + '/favoritos' , {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        /*'accept': 'application/json',*/
+                        'Authorization': `Bearer ${localStorage.getItem('jwt-token')}`
+                    }
+                });
+
+
                 if (!response.ok) {
                     throw Error(response.statusText);
                 }

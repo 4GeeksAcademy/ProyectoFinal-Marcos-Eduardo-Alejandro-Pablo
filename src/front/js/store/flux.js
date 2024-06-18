@@ -158,7 +158,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			updateUserName: async (newUserName) => {
 				const store = getStore();
-				const userId = store.currentUser.user_id;
+				const userId = store.currentUser.id;
 				try {
 					const response = await fetch(`${process.env.BACKEND_URL}/api/users/${userId}`, {
 						method: 'PUT',

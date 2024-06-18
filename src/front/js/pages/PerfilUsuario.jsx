@@ -54,7 +54,7 @@ const PerfilUsuario = () => {
                 <div className="col-md-8">
                     <p onClick={handleLogout}>Logout</p>
                     <h2>{store.currentUser && store.currentUser.email}</h2>
-                    <p><strong>ID: {store.currentUser && store.currentUser.id}</strong></p>
+                    <p><strong>Nombre: {store.currentUser && store.currentUser.user_name}</strong></p>
                 </div>
                 <div className="col-md-4 text-left">
                     <img src="https://dthezntil550i.cloudfront.net/f4/latest/f41908291942413280009640715/1280_960/1b2d9510-d66d-43a2-971a-cfcbb600e7fe.png" alt="Profile" className="img-fluid rounded-circle mb-3" />

@@ -13,7 +13,7 @@ const PaginaRegistro = () => {
         actions.registro(userInput)
             .then(() => {
                 console.log(userInput);
-                navigate("/perfil/");
+                navigate("/login/");
             });
     };
 

@@ -39,7 +39,7 @@ export const Header = () => {
 					<li className="nav-item" style={{ listStyle: "none" }}>
 						{store.currentUser !== null ? (
 							<Link to="/perfil" className="nav-link">
-								{store.currentUser && store.currentUser.email}
+								{store.currentUser ? (store.currentUser.user_name ? store.currentUser.user_name : store.currentUser.email) : null}
 							</Link>
 						) : (
 							<Link to="/login/" className="nav-link">
